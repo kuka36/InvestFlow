@@ -59,23 +59,28 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
     const newTx = { ...tx, id: crypto.randomUUID() };
     setTransactions(prev => [...prev, newTx]);
 
-    // Update asset holding logic (Simplified weighted average cost)
+    // Update asset holding logic (Weighted average cost)
     setAssets(prev => prev.map(asset => {
       if (asset.id !== tx.assetId) return asset;
 
       let newQty = asset.quantity;
-      let newCost = asset.avgCost;
+      let newAvgCost = asset.avgCost;
 
       if (tx.type === TransactionType.BUY) {
-        const totalValue = (asset.quantity * asset.avgCost) + (tx.quantity * tx.price) + tx.fee;
+        const currentTotalCost = asset.quantity * asset.avgCost;
+        const txCost = (tx.quantity * tx.price) + tx.fee;
+        
         newQty = asset.quantity + tx.quantity;
-        newCost = totalValue / newQty;
+        // Prevent division by zero if newQty is 0 (shouldn't happen on buy but good to be safe)
+        newAvgCost = newQty > 0 ? (currentTotalCost + txCost) / newQty : 0;
       } else if (tx.type === TransactionType.SELL) {
-        newQty = asset.quantity - tx.quantity;
-        // Avg cost doesn't usually change on sell unless using specific tax lots, keeping simple here
+        newQty = Math.max(0, asset.quantity - tx.quantity);
+        // Avg cost remains the same on Sell in simple weighted average accounting
+        // If we sold everything, reset avg cost to 0 to avoid confusion if we buy back later
+        if (newQty === 0) newAvgCost = 0;
       }
 
-      return { ...asset, quantity: newQty, avgCost: newCost };
+      return { ...asset, quantity: newQty, avgCost: newAvgCost };
     }));
   };
 
