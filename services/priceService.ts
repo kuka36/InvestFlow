@@ -6,8 +6,16 @@ interface PriceCache {
   timestamp: number;
 }
 
+// 汇率缓存接口
+interface ExchangeRateCache {
+  rate: number;
+  timestamp: number;
+}
+
 const priceCache = new Map<string, PriceCache>();
+const exchangeRateCache = new Map<string, ExchangeRateCache>();
 const CACHE_DURATION = 60000; // 1分钟缓存
+const EXCHANGE_RATE_CACHE_DURATION = 3600000; // 汇率缓存1小时（汇率变化较慢）
 
 /**
  * 获取加密货币价格 - 使用 CoinGecko API (免费，无需密钥)
@@ -99,6 +107,25 @@ async function getStockPriceFallback(symbol: string): Promise<number | null> {
 }
 
 /**
+ * 检测股票代码的货币类型
+ * 根据交易所后缀判断股票的报价货币
+ */
+function detectStockCurrency(symbol: string): Currency {
+  // 上海证券交易所 (.SS) 和深圳证券交易所 (.SZ) - 人民币
+  if (symbol.endsWith('.SS') || symbol.endsWith('.SZ')) {
+    return Currency.CNY;
+  }
+  
+  // 香港交易所 (.HK) - 港币
+  if (symbol.endsWith('.HK')) {
+    return Currency.HKD;
+  }
+  
+  // 其他默认为美元（包括美股、无后缀的股票等）
+  return Currency.USD;
+}
+
+/**
  * 获取基金价格 - 使用 Yahoo Finance
  */
 async function getFundPrice(symbol: string): Promise<number | null> {
@@ -153,17 +180,39 @@ async function getChinaFundPrice(fundCode: string): Promise<number | null> {
 async function getExchangeRate(from: Currency, to: Currency = Currency.USD): Promise<number> {
   if (from === to) return 1;
 
+  // 生成缓存键
+  const cacheKey = `${from}_${to}`;
+  
+  // 先尝试从缓存获取
+  const cached = exchangeRateCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < EXCHANGE_RATE_CACHE_DURATION) {
+    return cached.rate;
+  }
+
   try {
     const response = await fetch(
-      `/api/exchangerate/https://api.exchangerate-api.com/v4/latest/${from}`
+      `https://api.exchangerate-api.com/v4/latest/${from}`
     );
 
     if (!response.ok) throw new Error('ExchangeRate API failed');
     
     const data = await response.json();
-    return data.rates[to] || 1;
+    const rate = data.rates[to] || 1;
+    
+    // 缓存汇率
+    exchangeRateCache.set(cacheKey, {
+      rate,
+      timestamp: Date.now()
+    });
+    
+    return rate;
   } catch (error) {
     console.error(`Failed to fetch exchange rate ${from} to ${to}:`, error);
+    // 如果有缓存，即使过期也使用（降级策略）
+    if (cached) {
+      console.warn(`Using expired exchange rate cache for ${cacheKey}`);
+      return cached.rate;
+    }
     return 1;
   }
 }
@@ -207,17 +256,22 @@ export async function fetchAssetPrice(asset: Asset): Promise<number | null> {
   }
 
   let price: number | null = null;
+  let priceCurrency: Currency = Currency.USD; // API返回的价格货币类型
 
   // 根据资产类型调用不同的API
   switch (asset.type) {
     case AssetType.CRYPTO:
       price = await getCryptoPrice(asset.symbol);
+      priceCurrency = Currency.USD; // 加密货币价格默认为USD
       break;
     case AssetType.STOCK:
       price = await getStockPrice(asset.symbol);
+      priceCurrency = detectStockCurrency(asset.symbol); // 检测股票的报价货币
       break;
     case AssetType.FUND:
       price = await getFundPrice(asset.symbol);
+      // 6位数字代码的中国基金，价格为CNY
+      priceCurrency = /^\d{6}$/.test(asset.symbol) ? Currency.CNY : Currency.USD;
       break;
     default:
       return asset.currentPrice;
@@ -228,9 +282,9 @@ export async function fetchAssetPrice(asset: Asset): Promise<number | null> {
     return asset.currentPrice;
   }
 
-  // 如果资产使用非美元货币，需要进行汇率转换
-  if (asset.currency !== Currency.USD) {
-    const rate = await getExchangeRate(Currency.USD, asset.currency);
+  // 如果API返回的价格货币与资产货币不一致，需要进行汇率转换
+  if (priceCurrency !== asset.currency) {
+    const rate = await getExchangeRate(priceCurrency, asset.currency);
     price = price * rate;
   }
 
@@ -270,4 +324,19 @@ export async function refreshAllAssetPrices(assets: Asset[]): Promise<Asset[]> {
  */
 export function clearPriceCache(): void {
   priceCache.clear();
+}
+
+/**
+ * 清除汇率缓存
+ */
+export function clearExchangeRateCache(): void {
+  exchangeRateCache.clear();
+}
+
+/**
+ * 清除所有缓存
+ */
+export function clearAllCache(): void {
+  priceCache.clear();
+  exchangeRateCache.clear();
 }

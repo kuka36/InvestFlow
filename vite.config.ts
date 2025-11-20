@@ -16,11 +16,11 @@ export default defineConfig(({ mode }) => {
             rewrite: (path) => path.replace(/^\/api\/ttfund/, '')
           },
           // ExchangeRate API代理
-          '/api/exchangerate': {
-            target: 'https://api.exchangerate-api.com',
-            changeOrigin: true,
-            rewrite: (path) => path.replace(/^\/api\/exchangerate/, '')
-          }
+          // '/api/exchangerate': {
+          //   target: 'https://api.exchangerate-api.com',
+          //   changeOrigin: true,
+          //   rewrite: (path) => path.replace(/^\/api\/exchangerate/, '')
+          // }
         }
       },
       plugins: [react()],
