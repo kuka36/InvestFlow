@@ -1,12 +1,13 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { usePortfolio } from '../context/PortfolioContext';
+import { getRiskAssessment } from '../services/geminiService';
 import { Card } from './ui/Card';
 import { 
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, ComposedChart, Area, Line
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, ReferenceLine
 } from 'recharts';
 import { AssetType } from '../types';
-import { AlertTriangle, PieChart as PieIcon, TrendingUp, Activity } from 'lucide-react';
+import { AlertTriangle, PieChart as PieIcon, Sparkles, Gauge } from 'lucide-react';
 
 const COLORS = ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#6366f1'];
 const RISK_COLORS = {
@@ -15,11 +16,35 @@ const RISK_COLORS = {
   Low: '#10b981', // Fund/Cash
 };
 
+interface RiskData {
+  riskScore: number;
+  riskLevel: string;
+  analysis: string;
+}
+
 export const Analytics: React.FC = () => {
-  const { assets, transactions } = usePortfolio();
+  const { assets } = usePortfolio();
+  const [riskData, setRiskData] = useState<RiskData | null>(null);
+  const [loadingRisk, setLoadingRisk] = useState(false);
 
   const formatCurrency = (val: number) => 
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact' }).format(val);
+
+  useEffect(() => {
+    const fetchRisk = async () => {
+      if (assets.length === 0) return;
+      setLoadingRisk(true);
+      try {
+        const data = await getRiskAssessment(assets);
+        setRiskData(data);
+      } catch (e) {
+        console.error("Failed to fetch risk assessment", e);
+      } finally {
+        setLoadingRisk(false);
+      }
+    };
+    fetchRisk();
+  }, [assets]);
 
   // 1. Distribution by Asset Type
   const typeDistribution = useMemo(() => {
@@ -37,7 +62,7 @@ export const Analytics: React.FC = () => {
   const topAssets = useMemo(() => {
     return [...assets]
       .sort((a, b) => (b.quantity * b.currentPrice) - (a.quantity * a.currentPrice))
-      .slice(0, 6) // Top 6
+      .slice(0, 6)
       .map(a => ({
         name: a.symbol,
         value: a.quantity * a.currentPrice,
@@ -46,7 +71,7 @@ export const Analytics: React.FC = () => {
       }));
   }, [assets]);
 
-  // 3. Risk Analysis
+  // 3. Visual Risk Distribution (Local calculation for chart)
   const riskProfile = useMemo(() => {
     let high = 0, med = 0, low = 0;
     assets.forEach(a => {
@@ -157,30 +182,52 @@ export const Analytics: React.FC = () => {
                 </PieChart>
                 </ResponsiveContainer>
              </div>
-             <div className="space-y-4 pr-4 pb-4">
-                 <h4 className="font-medium text-slate-600 flex items-center gap-2">
-                    <AlertTriangle size={16} className="text-orange-500"/>
-                    Risk Breakdown
-                 </h4>
-                 <p className="text-sm text-slate-500 leading-relaxed">
-                     Your portfolio is weighted based on asset class volatility. 
-                     Crypto assets are classified as High Risk, Stocks as Medium Risk, and Funds/Cash as Low Risk.
-                 </p>
-                 <div className="space-y-2">
-                     {riskProfile.map(p => {
-                         const totalVal = riskProfile.reduce((acc, curr) => acc + curr.value, 0);
-                         const percent = ((p.value / totalVal) * 100).toFixed(1);
-                         return (
-                             <div key={p.name} className="flex items-center justify-between text-sm">
-                                 <div className="flex items-center gap-2">
-                                     <div className="w-2 h-2 rounded-full" style={{backgroundColor: p.color}}></div>
-                                     <span className="text-slate-600">{p.name}</span>
-                                 </div>
-                                 <span className="font-medium text-slate-800">{percent}%</span>
-                             </div>
-                         )
-                     })}
+             
+             <div className="pr-4 pb-4 h-full flex flex-col justify-center">
+                 <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-slate-600 flex items-center gap-2">
+                        <Sparkles size={16} className="text-purple-500"/>
+                        AI Risk Assessment
+                    </h4>
+                    {riskData && (
+                        <div className={`text-xs font-bold px-2 py-1 rounded border ${
+                            riskData.riskScore > 7 ? 'bg-red-50 text-red-600 border-red-100' : 
+                            riskData.riskScore > 4 ? 'bg-orange-50 text-orange-600 border-orange-100' : 
+                            'bg-green-50 text-green-600 border-green-100'
+                        }`}>
+                            Level: {riskData.riskLevel}
+                        </div>
+                    )}
                  </div>
+
+                 {loadingRisk ? (
+                     <div className="space-y-2 animate-pulse">
+                         <div className="h-4 bg-slate-100 rounded w-3/4"></div>
+                         <div className="h-4 bg-slate-100 rounded w-full"></div>
+                         <div className="h-4 bg-slate-100 rounded w-5/6"></div>
+                     </div>
+                 ) : riskData ? (
+                     <>
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden relative">
+                                <div 
+                                    className={`absolute top-0 left-0 h-full rounded-full transition-all duration-1000 ${
+                                        riskData.riskScore > 7 ? 'bg-gradient-to-r from-orange-500 to-red-500' :
+                                        riskData.riskScore > 4 ? 'bg-gradient-to-r from-yellow-400 to-orange-500' :
+                                        'bg-gradient-to-r from-green-400 to-green-600'
+                                    }`}
+                                    style={{ width: `${riskData.riskScore * 10}%` }}
+                                ></div>
+                            </div>
+                            <div className="text-sm font-bold text-slate-700 w-8 text-right">{riskData.riskScore}/10</div>
+                        </div>
+                        <p className="text-sm text-slate-500 leading-relaxed border-l-2 border-purple-200 pl-3">
+                            "{riskData.analysis}"
+                        </p>
+                     </>
+                 ) : (
+                     <p className="text-sm text-slate-400 italic">Unable to generate risk analysis.</p>
+                 )}
              </div>
            </div>
         </Card>
@@ -231,7 +278,7 @@ export const Analytics: React.FC = () => {
                 />
                 <Bar dataKey="pnl" name="Net P&L">
                    {pnlRanking.map((entry, index) => (
-                      <Cell key={`cell-pnl-${index}`} fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} radius={[4, 4, 0, 0]} />
+                      <Cell key={`cell-pnl-${index}`} fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} />
                    ))}
                 </Bar>
                 <ReferenceLine y={0} stroke="#cbd5e1" />
@@ -242,11 +289,4 @@ export const Analytics: React.FC = () => {
       </div>
     </div>
   );
-};
-
-// Helper component for ReferenceLine since it wasn't imported in the destructured import above
-const ReferenceLine = (props: any) => {
-    // Recharts types can be tricky with dynamic imports in this env, using a simple pass-through
-    // In a real app, ensure ReferenceLine is imported from 'recharts'
-    return <div className="hidden" />;
 };

@@ -1,22 +1,31 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { Asset } from "../types";
 
-const apiKey = process.env.API_KEY || ''; // Fallback handled in UI if missing
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const getPortfolioAnalysis = async (assets: Asset[]) => {
-  if (!apiKey) {
-    throw new Error("API Key is missing");
-  }
-
-  const ai = new GoogleGenAI({ apiKey });
+  if (!process.env.API_KEY) throw new Error("API Key is missing");
 
   const portfolioSummary = assets.map(a => ({
     symbol: a.symbol,
     name: a.name,
     type: a.type,
     value: (a.quantity * a.currentPrice).toFixed(2),
-    allocation: 0 // Calculated by model
   }));
+
+  // const prompt = `
+  //   You are a senior financial advisor.
+  //   Analyze the following portfolio JSON:
+  //   ${JSON.stringify(portfolioSummary)}
+
+  //   Please provide:
+  //   1. A brief summary of the asset allocation diversity.
+  //   2. Potential risks based on the asset types (e.g., too much crypto, sector concentration).
+  //   3. Constructive suggestions for rebalancing.
+    
+  //   Keep the tone professional yet encouraging. Format with markdown headers.
+  //   Be concise (under 250 words).
+  // `;
 
   const prompt = `
     您是 InvestFlow 的顶级财务顾问。请分析以下投资组合 JSON：
@@ -44,4 +53,47 @@ export const getPortfolioAnalysis = async (assets: Asset[]) => {
     console.error("Gemini API Error:", error);
     throw error;
   }
+};
+
+export const getRiskAssessment = async (assets: Asset[]) => {
+  if (!process.env.API_KEY) throw new Error("API Key is missing");
+
+  const portfolioSummary = assets.map(a => ({
+    symbol: a.symbol,
+    type: a.type,
+    value: (a.quantity * a.currentPrice).toFixed(0),
+  }));
+
+  const prompt = `
+    Evaluate the risk profile of this investment portfolio. 请使用 中文 输出结果。
+    Portfolio: ${JSON.stringify(portfolioSummary)}
+  `;
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash',
+    contents: prompt,
+    config: {
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          riskScore: {
+            type: Type.NUMBER,
+            description: "A score from 1 (Conservative) to 10 (Highly Speculative)"
+          },
+          riskLevel: {
+            type: Type.STRING,
+            description: "One of: 'Conservative', 'Moderate', 'Aggressive', 'Very Aggressive'"
+          },
+          analysis: {
+            type: Type.STRING,
+            description: "A concise paragraph (max 60 words) explaining the primary risk factors."
+          }
+        },
+        required: ["riskScore", "riskLevel", "analysis"]
+      }
+    }
+  });
+
+  return JSON.parse(response.text as string);
 };
