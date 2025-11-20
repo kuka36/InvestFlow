@@ -20,7 +20,8 @@ const INITIAL_ASSETS: Asset[] = [
   { id: '1', symbol: 'AAPL', name: 'Apple Inc.', type: AssetType.STOCK, quantity: 50, avgCost: 150, currentPrice: 175.5, currency: Currency.USD },
   { id: '2', symbol: 'BTC', name: 'Bitcoin', type: AssetType.CRYPTO, quantity: 0.45, avgCost: 42000, currentPrice: 64000, currency: Currency.USD },
   { id: '3', symbol: 'VOO', name: 'Vanguard S&P 500', type: AssetType.FUND, quantity: 20, avgCost: 380, currentPrice: 410, currency: Currency.USD },
-  { id: '4', symbol: 'USD', name: 'Cash Reserve', type: AssetType.CASH, quantity: 15000, avgCost: 1, currentPrice: 1, currency: Currency.USD },
+  { id: '4', symbol: '000217', name: '华安黄金ETF联接C', type: AssetType.FUND, quantity: 1000, avgCost: 2.85, currentPrice: 3.19, currency: Currency.CNY },
+  { id: '5', symbol: 'USD', name: 'Cash Reserve', type: AssetType.CASH, quantity: 15000, avgCost: 1, currentPrice: 1, currency: Currency.USD },
 ];
 
 export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children }) => {

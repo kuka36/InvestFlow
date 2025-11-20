@@ -8,6 +8,20 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        proxy: {
+          // 天天基金API代理
+          '/api/ttfund': {
+            target: 'https://fundgz.1234567.com.cn',
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/api\/ttfund/, '')
+          },
+          // ExchangeRate API代理
+          '/api/exchangerate': {
+            target: 'https://api.exchangerate-api.com',
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/api\/exchangerate/, '')
+          }
+        }
       },
       plugins: [react()],
       define: {

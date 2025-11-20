@@ -102,8 +102,49 @@ async function getStockPriceFallback(symbol: string): Promise<number | null> {
  * 获取基金价格 - 使用 Yahoo Finance
  */
 async function getFundPrice(symbol: string): Promise<number | null> {
-  // 基金和股票使用相同的数据源
+  // 优先检查是否是中国基金（6位数字代码）
+  if (/^\d{6}$/.test(symbol)) {
+    return getChinaFundPrice(symbol);
+  }
+  
+  // 其他基金使用股票API
   return getStockPrice(symbol);
+}
+
+/**
+ * 获取中国基金净值 - 使用天天基金API
+ * 支持场内ETF和场外基金
+ */
+async function getChinaFundPrice(fundCode: string): Promise<number | null> {
+  try {
+    const timestamp = Date.now();
+    const response = await fetch(
+      `/api/ttfund/js/${fundCode}.js?rt=${timestamp}`
+    );
+
+    if (!response.ok) throw new Error('天天基金API请求失败');
+    
+    const text = await response.text();
+    
+    // 解析JSONP格式: jsonpgz({...})
+    const jsonMatch = text.match(/jsonpgz\((.+)\)/);
+    if (!jsonMatch) throw new Error('解析基金数据失败');
+    
+    const data = JSON.parse(jsonMatch[1]);
+    
+    // gsz: 估算净值（实时）, dwjz: 单位净值（上一交易日）
+    // 优先使用估算净值，如果没有则使用单位净值
+    const price = parseFloat(data.gsz || data.dwjz);
+    
+    if (isNaN(price) || price <= 0) {
+      throw new Error('基金净值数据无效');
+    }
+    
+    return price;
+  } catch (error) {
+    console.error(`获取中国基金 ${fundCode} 净值失败:`, error);
+    return null;
+  }
 }
 
 /**
