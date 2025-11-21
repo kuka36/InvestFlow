@@ -227,7 +227,7 @@ export const Dashboard: React.FC = () => {
         </Card>
 
         {/* Pie Chart */}
-        <Card title={`Asset Allocation (Gross Assets)`}>
+        <Card title={`Asset Allocation (${settings.baseCurrency})`}>
           <div className="h-[300px] w-full flex flex-col items-center justify-center relative">
             {settings.isPrivacyMode ? (
                  <div className="h-full flex flex-col items-center justify-center text-slate-300">
