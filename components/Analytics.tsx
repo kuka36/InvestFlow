@@ -27,6 +27,7 @@ export const Analytics: React.FC = () => {
   const { assets, settings, exchangeRates } = usePortfolio();
   const [riskData, setRiskData] = useState<RiskData | null>(null);
   const [loadingRisk, setLoadingRisk] = useState(false);
+  const [riskError, setRiskError] = useState(false);
 
   const formatCurrency = (val: number) => 
     new Intl.NumberFormat('en-US', { style: 'currency', currency: settings.baseCurrency, notation: 'compact' }).format(val);
@@ -36,16 +37,22 @@ export const Analytics: React.FC = () => {
 
     const fetchRisk = async () => {
       if (assets.length === 0) return;
+      if (!settings.geminiApiKey) {
+        setRiskError(true);
+        return;
+      }
       
       setLoadingRisk(true);
+      setRiskError(false);
       
       try {
-        const data = await getRiskAssessment(assets);
+        const data = await getRiskAssessment(assets, settings.geminiApiKey);
         if (isMounted) {
           setRiskData(data);
         }
       } catch (e) {
         console.error("Failed to fetch risk assessment", e);
+        if (isMounted) setRiskError(true);
       } finally {
         if (isMounted) {
           setLoadingRisk(false);
@@ -58,7 +65,7 @@ export const Analytics: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [assets]);
+  }, [assets, settings.geminiApiKey]);
 
   // 1. Distribution by Asset Type (Converted, Excluding Liabilities)
   const typeDistribution = useMemo(() => {
@@ -228,7 +235,11 @@ export const Analytics: React.FC = () => {
                     )}
                  </div>
 
-                 {loadingRisk && !riskData ? (
+                 {riskError ? (
+                    <div className="text-sm text-orange-500 bg-orange-50 p-3 rounded border border-orange-100">
+                        AI features unavailable. Please check your API Key in Settings.
+                    </div>
+                 ) : loadingRisk && !riskData ? (
                      <div className="space-y-2 animate-pulse">
                          <div className="h-4 bg-slate-100 rounded w-3/4"></div>
                          <div className="h-4 bg-slate-100 rounded w-full"></div>

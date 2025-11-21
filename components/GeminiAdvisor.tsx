@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Card } from './ui/Card';
 import { usePortfolio } from '../context/PortfolioContext';
 import { getPortfolioAnalysis, generatePortfolioHash, ADVISOR_CACHE_KEY, ADVISOR_CACHE_TTL } from '../services/geminiService';
-import { Sparkles, ChevronDown, ChevronUp, RefreshCw, CheckCircle } from 'lucide-react';
+import { Sparkles, ChevronDown, ChevronUp, RefreshCw, CheckCircle, Key } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const GeminiAdvisor: React.FC = () => {
-  const { assets } = usePortfolio();
+  const { assets, settings } = usePortfolio();
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +52,13 @@ export const GeminiAdvisor: React.FC = () => {
 
   const handleAnalyze = async (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    
+    if (!settings.geminiApiKey) {
+      setError("API Key is missing. Please set it in Settings.");
+      setIsExpanded(true);
+      return;
+    }
+
     if (assets.length === 0) return;
     
     setLoading(true);
@@ -63,11 +71,12 @@ export const GeminiAdvisor: React.FC = () => {
       // The service handles the logic, but calling this will fetch fresh data 
       // if we are in a 'canAnalyze' state (hash diff or stale).
       // We also force localStorage update inside the service.
-      const result = await getPortfolioAnalysis(assets);
+      const result = await getPortfolioAnalysis(assets, settings.geminiApiKey);
       setAnalysis(result);
       setCanAnalyze(false); // Analysis is now fresh
-    } catch (err) {
-      setError("Could not generate analysis. Please check your API Key.");
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Could not generate analysis. Check API Key.");
     } finally {
       setLoading(false);
     }
@@ -122,8 +131,13 @@ export const GeminiAdvisor: React.FC = () => {
             )}
 
             {error && (
-                <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">
-                {error}
+                <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex justify-between items-center">
+                  <span>{error}</span>
+                  {!settings.geminiApiKey && (
+                    <Link to="/settings" className="flex items-center gap-1 text-blue-600 hover:underline font-medium">
+                       <Key size={14}/> Set Key
+                    </Link>
+                  )}
                 </div>
             )}
 

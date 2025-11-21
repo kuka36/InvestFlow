@@ -5,6 +5,7 @@ import { fetchExchangeRates, fetchCryptoPrices, fetchStockPrices, ExchangeRates 
 interface AppSettings {
   baseCurrency: Currency;
   isPrivacyMode: boolean;
+  geminiApiKey: string;
 }
 
 interface PortfolioContextType {
@@ -37,6 +38,7 @@ const INITIAL_ASSETS: Asset[] = [
 const INITIAL_SETTINGS: AppSettings = {
   baseCurrency: Currency.USD,
   isPrivacyMode: false,
+  geminiApiKey: process.env.GEMINI_API_KEY || '',
 };
 
 export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -52,7 +54,16 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const [settings, setSettings] = useState<AppSettings>(() => {
     const saved = localStorage.getItem('investflow_settings');
-    return saved ? JSON.parse(saved) : INITIAL_SETTINGS;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Ensure geminiApiKey has a fallback even if not in localStorage (e.g. first load after update)
+      return {
+        ...INITIAL_SETTINGS,
+        ...parsed,
+        geminiApiKey: parsed.geminiApiKey || INITIAL_SETTINGS.geminiApiKey
+      };
+    }
+    return INITIAL_SETTINGS;
   });
 
   // Default rates (will be updated by API)
