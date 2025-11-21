@@ -1,13 +1,15 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Asset, AssetType } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 export const RISK_CACHE_KEY = 'investflow_risk_cache';
 export const RISK_CACHE_TTL = 3600 * 1000; // 1 hour
 
 export const ADVISOR_CACHE_KEY = 'investflow_advisor_cache';
 export const ADVISOR_CACHE_TTL = 24 * 3600 * 1000; // 24 hours
+
+const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 // In-memory promise cache to prevent simultaneous duplicate calls
 let pendingRiskPromise: { hash: string, promise: Promise<any> } | null = null;
@@ -21,7 +23,7 @@ export const generatePortfolioHash = (assets: Asset[]) => {
 };
 
 export const getPortfolioAnalysis = async (assets: Asset[]) => {
-  if (!process.env.API_KEY) throw new Error("API Key is missing");
+  if (!GEMINI_API_KEY) throw new Error("API Key is missing");
   if (assets.length === 0) return "";
 
   const currentHash = generatePortfolioHash(assets);
@@ -116,7 +118,7 @@ export const getPortfolioAnalysis = async (assets: Asset[]) => {
 };
 
 export const getRiskAssessment = async (assets: Asset[]) => {
-  if (!process.env.API_KEY) throw new Error("API Key is missing");
+  if (!GEMINI_API_KEY) throw new Error("API Key is missing");
   if (assets.length === 0) return null;
 
   const currentHash = generatePortfolioHash(assets);

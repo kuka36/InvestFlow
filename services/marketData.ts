@@ -1,6 +1,6 @@
 import { Asset, AssetType, Currency } from '../types';
 
-const ALPHA_VANTAGE_KEY = import.meta.env.VITE_ALPHA_VANTAGE_KEY;
+const ALPHA_VANTAGE_KEY = process.env.VITE_ALPHA_VANTAGE_KEY;
 const EXCHANGE_RATE_API = 'https://api.exchangerate-api.com/v4/latest/USD';
 const COINGECKO_API = 'https://api.coingecko.com/api/v3/simple/price';
 
