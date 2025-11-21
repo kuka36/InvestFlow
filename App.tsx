@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { PortfolioProvider, usePortfolio } from './context/PortfolioContext';
@@ -15,7 +16,7 @@ import { Asset } from './types';
 const DashboardView: React.FC = () => {
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
   const [isTxModalOpen, setIsTxModalOpen] = useState(false);
-  const { refreshPrices } = usePortfolio();
+  const { refreshPrices, isRefreshing } = usePortfolio();
 
   return (
     <div className="space-y-8">
@@ -26,11 +27,12 @@ const DashboardView: React.FC = () => {
         </div>
         <div className="flex flex-wrap gap-2">
            <button 
-            onClick={refreshPrices}
-            className="px-4 py-2.5 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 font-medium rounded-xl shadow-sm transition-all flex items-center gap-2"
+            onClick={() => refreshPrices()}
+            disabled={isRefreshing}
+            className="px-4 py-2.5 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 font-medium rounded-xl shadow-sm transition-all flex items-center gap-2 disabled:opacity-50"
            >
-             <RefreshCw size={18}/>
-             <span className="hidden sm:inline">Refresh</span>
+             <RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} />
+             <span className="hidden sm:inline">{isRefreshing ? "Refreshing..." : "Refresh"}</span>
            </button>
            
            <button 

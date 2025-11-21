@@ -2,7 +2,7 @@ import React from 'react';
 import { usePortfolio } from '../context/PortfolioContext';
 import { Card } from './ui/Card';
 import { ArrowUpRight, ArrowDownRight, Pencil, Trash2 } from 'lucide-react';
-import { Asset, AssetType } from '../types';
+import { Asset, AssetType, Currency } from '../types';
 
 interface AssetListProps {
     onEdit?: (asset: Asset) => void;
@@ -22,6 +22,16 @@ export const AssetList: React.FC<AssetListProps> = ({ onEdit }) => {
     }
   };
 
+  // Helper to get currency symbol
+  const getCurrencySymbol = (curr: Currency) => {
+      switch(curr) {
+          case Currency.USD: return '$';
+          case Currency.CNY: return '¥';
+          case Currency.HKD: return 'HK$';
+          default: return '$';
+      }
+  };
+
   const handleDelete = (id: string, symbol: string) => {
       if (window.confirm(`Are you sure you want to delete ${symbol}? This action cannot be undone.`)) {
           deleteAsset(id);
@@ -35,16 +45,17 @@ export const AssetList: React.FC<AssetListProps> = ({ onEdit }) => {
           <thead>
             <tr className="text-xs text-slate-400 uppercase border-b border-slate-100">
               <th className="pb-3 font-medium pl-2">Asset</th>
-              <th className="pb-3 font-medium">Price</th>
+              <th className="pb-3 font-medium">Price (Native)</th>
               <th className="pb-3 font-medium">Avg Cost</th>
               <th className="pb-3 font-medium">Holdings</th>
-              <th className="pb-3 font-medium text-right">Value</th>
+              <th className="pb-3 font-medium text-right">Value (Native)</th>
               <th className="pb-3 font-medium text-right pr-2">P&L</th>
               {onEdit && <th className="pb-3 font-medium text-right pr-2">Actions</th>}
             </tr>
           </thead>
           <tbody className="text-sm">
             {assets.map((asset) => {
+              const symbol = getCurrencySymbol(asset.currency);
               const currentValue = asset.quantity * asset.currentPrice;
               const costBasis = asset.quantity * asset.avgCost;
               const pnl = currentValue - costBasis;
@@ -58,23 +69,29 @@ export const AssetList: React.FC<AssetListProps> = ({ onEdit }) => {
                         {asset.symbol.substring(0, 1)}
                       </div>
                       <div>
-                        <div className="font-semibold text-slate-800">{asset.symbol}</div>
+                        <div className="flex items-center gap-1">
+                            <div className="font-semibold text-slate-800">{asset.symbol}</div>
+                            <span className="text-[10px] px-1 py-0.5 bg-slate-100 text-slate-500 rounded">{asset.currency}</span>
+                        </div>
                         <div className="text-xs text-slate-400 max-w-[100px] truncate">{asset.name}</div>
                       </div>
                     </div>
                   </td>
                   <td className="py-4">
-                    <div className="font-medium text-slate-700">${asset.currentPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    <div className="font-medium text-slate-700">
+                        {symbol}{asset.currentPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    </div>
                   </td>
                   <td className="py-4">
-                    <div className="font-medium text-slate-700">${asset.avgCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    <div className="font-medium text-slate-700">
+                        {symbol}{asset.avgCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    </div>
                   </td>
                   <td className="py-4">
                     <div className="font-medium text-slate-700">{asset.quantity.toLocaleString()}</div>
-                    <div className="text-xs text-slate-400">Avg: ${asset.avgCost.toLocaleString(undefined, {maximumFractionDigits: 1})}</div>
                   </td>
                   <td className="py-4 text-right font-semibold text-slate-800">
-                    ${currentValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    {symbol}{currentValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                   </td>
                   <td className="py-4 text-right pr-2">
                     <div className={`flex items-center justify-end gap-1 font-medium ${pnl >= 0 ? 'text-green-600' : 'text-red-500'}`}>
@@ -82,7 +99,7 @@ export const AssetList: React.FC<AssetListProps> = ({ onEdit }) => {
                       {Math.abs(pnlPercent).toFixed(2)}%
                     </div>
                     <div className={`text-xs ${pnl >= 0 ? 'text-green-600/70' : 'text-red-500/70'}`}>
-                      {pnl >= 0 ? '+' : '-'}${Math.abs(pnl).toLocaleString(undefined, {maximumFractionDigits: 0})}
+                      {pnl >= 0 ? '+' : '-'}{symbol}{Math.abs(pnl).toLocaleString(undefined, {maximumFractionDigits: 0})}
                     </div>
                   </td>
                   {onEdit && (

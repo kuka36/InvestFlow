@@ -10,7 +10,7 @@ interface Props {
 }
 
 export const AddAssetModal: React.FC<Props> = ({ isOpen, onClose, initialAsset }) => {
-  const { addAsset, editAsset, assets } = usePortfolio();
+  const { addAsset, editAsset } = usePortfolio();
   const [mode, setMode] = useState<EntryMode>(EntryMode.SIMPLE);
   
   // Form State
@@ -64,69 +64,13 @@ export const AddAssetModal: React.FC<Props> = ({ isOpen, onClose, initialAsset }
         // with historical cost data, unless you explicitly added a field for current price.
       });
     } else {
-      const upperSymbol = symbol.toUpperCase();
-      
-      // Transaction Mode: Check if asset with same symbol exists
-      if (mode === EntryMode.TRANSACTION) {
-        const existingAsset = assets.find(a => a.symbol === upperSymbol && a.type === type);
-        
-        if (existingAsset) {
-          // Merge with existing asset
-          const isBuy = qtyNum > 0;
-          const isSell = qtyNum < 0;
-          const absQty = Math.abs(qtyNum);
-          
-          let newQuantity: number;
-          let newAvgCost: number;
-          
-          if (isBuy) {
-            // 买入：加仓并重新计算均价
-            const totalValue = (existingAsset.quantity * existingAsset.avgCost) + (absQty * costNum);
-            newQuantity = existingAsset.quantity + absQty;
-            newAvgCost = totalValue / newQuantity;
-          } else if (isSell) {
-            // 卖出：减仓，均价不变
-            newQuantity = existingAsset.quantity - absQty;
-            newAvgCost = existingAsset.avgCost;
-            
-            // 防止卖出数量超过持仓
-            if (newQuantity < 0) {
-              alert(`卖出数量 (${absQty}) 超过当前持仓 (${existingAsset.quantity})`);
-              return;
-            }
-          } else {
-            // 数量为0，不做任何操作
-            return;
-          }
-          
-          // 更新已有资产
-          editAsset({
-            ...existingAsset,
-            quantity: newQuantity,
-            avgCost: newAvgCost,
-            name: name || existingAsset.name, // 保留原名称或使用新名称
-          });
-          
-          onClose();
-          return;
-        }
-        
-        // 如果是卖出但没有持仓，不允许操作
-        if (qtyNum < 0) {
-          alert(`无法卖出 ${upperSymbol}：当前没有持仓`);
-          return;
-        }
-      }
-      
-      // Simple Mode 或 Transaction Mode 下的新资产（买入）
-      const finalQty = mode === EntryMode.TRANSACTION ? Math.abs(qtyNum) : qtyNum;
-      
+      // Add new asset
       addAsset({
         id: crypto.randomUUID(),
-        symbol: upperSymbol,
-        name: name || upperSymbol,
+        symbol: symbol.toUpperCase(),
+        name: name || symbol.toUpperCase(),
         type,
-        quantity: finalQty,
+        quantity: qtyNum,
         avgCost: costNum,
         currentPrice: costNum, // Assume current price is buy price for initial entry
         currency: Currency.USD
@@ -204,11 +148,9 @@ export const AddAssetModal: React.FC<Props> = ({ isOpen, onClose, initialAsset }
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-               <label className="block text-xs font-medium text-slate-500 uppercase mb-1">
-                 {mode === EntryMode.TRANSACTION ? 'Quantity (+ buy / - sell)' : 'Quantity'}
-               </label>
+               <label className="block text-xs font-medium text-slate-500 uppercase mb-1">Quantity</label>
                <input 
-                type="number" step="any" placeholder={mode === EntryMode.TRANSACTION ? "+100 or -50" : "0.00"}
+                type="number" step="any" placeholder="0.00"
                 value={quantity} onChange={e => setQuantity(e.target.value)}
                 className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 required
@@ -232,12 +174,7 @@ export const AddAssetModal: React.FC<Props> = ({ isOpen, onClose, initialAsset }
 
           {mode === EntryMode.TRANSACTION && !isEditing && (
             <div className="p-3 bg-blue-50 text-blue-700 text-xs rounded-lg border border-blue-100">
-                <strong>交易模式已启用：</strong>
-                <ul className="list-disc ml-4 mt-1">
-                  <li>正数数量表示买入，将加仓并重新计算持仓均价</li>
-                  <li>负数数量表示卖出，将减仓但均价保持不变</li>
-                  <li>如果已有相同标的，将自动合并持仓</li>
-                </ul>
+                Transaction mode enabled: This will record a Buy history and recalculate your portfolio's weighted average cost.
             </div>
           )}
 

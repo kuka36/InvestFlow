@@ -41,6 +41,7 @@ export const GeminiAdvisor: React.FC = () => {
         }
     };
 
+    // Auto-fetch only on mount if we have assets
     initAnalysis();
 
     return () => {

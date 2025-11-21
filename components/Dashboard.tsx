@@ -3,52 +3,70 @@ import { usePortfolio } from '../context/PortfolioContext';
 import { Card } from './ui/Card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { TrendingUp, TrendingDown, DollarSign, Activity, EyeOff } from 'lucide-react';
+import { convertValue } from '../services/marketData';
 
 const COLORS = ['#0ea5e9', '#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b'];
 
 export const Dashboard: React.FC = () => {
-  const { assets, settings } = usePortfolio();
+  const { assets, settings, exchangeRates } = usePortfolio();
 
-  // Calculate Summaries
+  // Calculate Summaries with Currency Conversion
   const summary = useMemo(() => {
     let totalBalance = 0;
     let totalCost = 0;
     let dayPnL = 0;
 
     assets.forEach(asset => {
-      const value = asset.quantity * asset.currentPrice;
-      const cost = asset.quantity * asset.avgCost;
-      totalBalance += value;
-      totalCost += cost;
-      // Mocking Day PnL as 1.2% of value just for demo visualization
-      dayPnL += value * (Math.random() * 0.05 - 0.02); // todo: replace with actual logic
+      // Raw Value in Native Currency
+      const nativeValue = asset.quantity * asset.currentPrice;
+      const nativeCost = asset.quantity * asset.avgCost;
+
+      // Convert to Base Currency
+      const convertedValue = convertValue(nativeValue, asset.currency, settings.baseCurrency, exchangeRates);
+      const convertedCost = convertValue(nativeCost, asset.currency, settings.baseCurrency, exchangeRates);
+
+      totalBalance += convertedValue;
+      totalCost += convertedCost;
+      
+      // Mocking Day PnL (since we don't store "yesterday's price" in this simple model)
+      // In a real app, we would convert (currentPrice - prevClose) * qty
+      dayPnL += convertedValue * (Math.random() * 0.03 - 0.01); 
     });
 
     const totalPnL = totalBalance - totalCost;
     const totalPnLPercent = totalCost > 0 ? (totalPnL / totalCost) * 100 : 0;
 
     return { totalBalance, totalCost, totalPnL, totalPnLPercent, dayPnL };
-  }, [assets]);
+  }, [assets, settings.baseCurrency, exchangeRates]);
 
-  // Prepare Pie Chart Data
+  // Prepare Pie Chart Data (in Base Currency)
   const allocationData = useMemo(() => {
-    return assets.map(asset => ({
-      name: asset.symbol,
-      value: asset.quantity * asset.currentPrice
-    })).filter(d => d.value > 0).sort((a, b) => b.value - a.value);
-  }, [assets]);
+    return assets.map(asset => {
+      const nativeValue = asset.quantity * asset.currentPrice;
+      const convertedValue = convertValue(nativeValue, asset.currency, settings.baseCurrency, exchangeRates);
+      return {
+        name: asset.symbol,
+        value: convertedValue
+      };
+    }).filter(d => d.value > 0).sort((a, b) => b.value - a.value);
+  }, [assets, settings.baseCurrency, exchangeRates]);
 
   // Prepare Mock History Data for Area Chart
   const historyData = useMemo(() => {
     const data = [];
     let balance = summary.totalCost || 10000; 
-    // Generate 30 days of mock history trending towards current balance
+    // If total cost is 0 (empty), default to a small number to show graph
+    if (balance === 0 && assets.length > 0) balance = summary.totalBalance * 0.9;
+
     for (let i = 30; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
+      
+      // Random walk for history
       const volatility = (Math.random() - 0.45) * (balance * 0.02);
       balance += volatility;
-      // Force the last point to match current actual balance for smoothness
+      
+      // Force end point to match current
       if (i === 0) balance = summary.totalBalance;
       
       data.push({
@@ -57,7 +75,7 @@ export const Dashboard: React.FC = () => {
       });
     }
     return data;
-  }, [summary.totalBalance, summary.totalCost]);
+  }, [summary.totalBalance, summary.totalCost, assets.length]);
 
   const formatCurrency = (val: number) => {
       if (settings.isPrivacyMode) return '****';
@@ -76,11 +94,13 @@ export const Dashboard: React.FC = () => {
         <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
             {settings.isPrivacyMode && <EyeOff className="absolute top-6 right-6 text-blue-400 opacity-50" size={24} />}
             <div className="flex items-center justify-between mb-4">
-                <span className="text-blue-100 font-medium">Total Balance</span>
+                <span className="text-blue-100 font-medium">Total Net Worth</span>
                 <div className="p-2 bg-white/20 rounded-lg"><DollarSign size={20} /></div>
             </div>
             <div className="text-3xl font-bold mb-1">{formatCurrency(summary.totalBalance)}</div>
-            <div className="text-sm text-blue-100">Asset Net Worth</div>
+            <div className="text-sm text-blue-100">
+                In {settings.baseCurrency}
+            </div>
         </div>
 
         <Card className="flex flex-col justify-center">
@@ -90,7 +110,7 @@ export const Dashboard: React.FC = () => {
             <div className="text-2xl font-bold text-slate-800 mb-1">{formatCurrency(summary.dayPnL)}</div>
             <div className={`text-sm font-medium flex items-center gap-1 ${summary.dayPnL >= 0 ? 'text-green-600' : 'text-red-500'}`}>
                 {summary.dayPnL >= 0 ? <TrendingUp size={14}/> : <TrendingDown size={14}/>}
-                {formatPercent(Math.abs(summary.dayPnL / summary.totalBalance) * 100)}
+                {formatPercent(Math.abs(summary.dayPnL / (summary.totalBalance || 1)) * 100)}
             </div>
         </Card>
 
@@ -130,7 +150,7 @@ export const Dashboard: React.FC = () => {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                 <XAxis dataKey="date" tickLine={false} axisLine={false} tick={{fill: '#64748b', fontSize: 12}} />
-                <YAxis tickFormatter={(val) => `$${val/1000}k`} tickLine={false} axisLine={false} tick={{fill: '#64748b', fontSize: 12}} width={40}/>
+                <YAxis tickFormatter={(val) => `$${(val/1000).toFixed(0)}k`} tickLine={false} axisLine={false} tick={{fill: '#64748b', fontSize: 12}} width={40}/>
                 <Tooltip 
                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                     formatter={(value: number) => [formatCurrency(value), 'Net Worth']}
@@ -143,7 +163,7 @@ export const Dashboard: React.FC = () => {
         </Card>
 
         {/* Pie Chart */}
-        <Card title="Allocation">
+        <Card title={`Allocation (${settings.baseCurrency})`}>
           <div className="h-[300px] w-full flex flex-col items-center justify-center relative">
             {settings.isPrivacyMode ? (
                  <div className="h-full flex flex-col items-center justify-center text-slate-300">
@@ -186,7 +206,7 @@ export const Dashboard: React.FC = () => {
                 {allocationData.slice(0, 4).map((entry, idx) => (
                     <div key={entry.name} className="flex items-center gap-1 text-xs text-slate-500">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
-                        {entry.name} {((entry.value / summary.totalBalance) * 100).toFixed(0)}%
+                        {entry.name} {((entry.value / (summary.totalBalance || 1)) * 100).toFixed(0)}%
                     </div>
                 ))}
             </div>

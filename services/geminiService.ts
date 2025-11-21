@@ -53,41 +53,26 @@ export const getPortfolioAnalysis = async (assets: Asset[]) => {
 
   // 3. Execute API Call
   const apiCall = (async () => {
-  const portfolioSummary = assets.map(a => ({
-    symbol: a.symbol,
-    name: a.name,
-    type: a.type,
-    value: (a.quantity * a.currentPrice).toFixed(2),
-  }));
+    const portfolioSummary = assets.map(a => ({
+      symbol: a.symbol,
+      name: a.name,
+      type: a.type,
+      value: (a.quantity * a.currentPrice).toFixed(2),
+    }));
 
-  // const prompt = `
-  //   You are a senior financial advisor.
-  //   Analyze the following portfolio JSON:
-  //   ${JSON.stringify(portfolioSummary)}
+    const prompt = `
+      You are a senior financial advisor.
+      Analyze the following portfolio JSON:
+      ${JSON.stringify(portfolioSummary)}
 
-  //   Please provide:
-  //   1. A brief summary of the asset allocation diversity.
-  //   2. Potential risks based on the asset types (e.g., too much crypto, sector concentration).
-  //   3. Constructive suggestions for rebalancing.
-
-  //   Keep the tone professional yet encouraging. Format with markdown headers.
-  //   Be concise (under 250 words).
-  // `;
-
-  const prompt = `
-    您是 InvestFlow 的顶级财务顾问。请分析以下投资组合 JSON：
-    ${JSON.stringify(portfolioSummary)}
-
-    请提供：
-    1. 资产配置多样性的简要概述。
-    2. 基于资产类型的潜在风险（例如，加密货币配置过高、行业集中度过高）。
-    3. 根据您专业知识及最新市场行情，提供资产配置再平衡的建设性建议。
-    
-    请保持专业而又不失鼓励的语气。
-    请使用 Markdown 标题进行格式化。
-    请使用 中文 输出结果。
-    请言简意赅（不超过 250 字）。
-  `;
+      Please provide:
+      1. A brief summary of the asset allocation diversity.
+      2. Potential risks based on the asset types (e.g., too much crypto, sector concentration).
+      3. Constructive suggestions for rebalancing.
+      
+      Keep the tone professional yet encouraging. Format with markdown headers.
+      Be concise (under 250 words).
+    `;
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
@@ -141,9 +126,8 @@ export const getRiskAssessment = async (assets: Asset[]) => {
   }
 
   // 2. Check In-Flight Requests (De-duplication)
-  // This prevents double-calling when React StrictMode mounts components twice
   if (pendingRiskPromise && pendingRiskPromise.hash === currentHash) {
-    return pendingRiskPromise.promise;
+     return pendingRiskPromise.promise;
   }
 
   // 3. Prepare and Execute API Call
@@ -155,9 +139,9 @@ export const getRiskAssessment = async (assets: Asset[]) => {
     }));
 
     const prompt = `
-    Evaluate the risk profile of this investment portfolio.
-    Portfolio: ${JSON.stringify(portfolioSummary)}
-  `;
+      Evaluate the risk profile of this investment portfolio.
+      Portfolio: ${JSON.stringify(portfolioSummary)}
+    `;
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
@@ -177,7 +161,7 @@ export const getRiskAssessment = async (assets: Asset[]) => {
             },
             analysis: {
               type: Type.STRING,
-              description: "A concise paragraph (max 60 words) explaining the primary risk factors.使用中文"
+              description: "A concise paragraph (max 60 words) explaining the primary risk factors."
             }
           },
           required: ["riskScore", "riskLevel", "analysis"]
@@ -205,9 +189,9 @@ export const getRiskAssessment = async (assets: Asset[]) => {
   pendingRiskPromise = { hash: currentHash, promise: apiCall };
 
   try {
-    return await apiCall;
+      return await apiCall;
   } finally {
-    // Clear pending promise once done (success or fail)
-    pendingRiskPromise = null;
+      // Clear pending promise once done (success or fail)
+      pendingRiskPromise = null;
   }
 };
