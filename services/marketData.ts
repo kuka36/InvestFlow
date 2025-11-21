@@ -1,6 +1,6 @@
 import { Asset, AssetType, Currency } from '../types';
 
-const ALPHA_VANTAGE_KEY = 'R855D2A1KSKT0CUS'; // Provided Key
+const ALPHA_VANTAGE_KEY = import.meta.env.VITE_ALPHA_VANTAGE_KEY;
 const EXCHANGE_RATE_API = 'https://api.exchangerate-api.com/v4/latest/USD';
 const COINGECKO_API = 'https://api.coingecko.com/api/v3/simple/price';
 
@@ -159,6 +159,12 @@ export const fetchStockPrices = async (assets: Asset[]): Promise<Record<string, 
 
   for (const asset of limitedQueue) {
     try {
+      // Check if API Key is present
+      if (!ALPHA_VANTAGE_KEY) {
+        console.warn("Alpha Vantage API Key is missing. Please set VITE_ALPHA_VANTAGE_KEY in your environment.");
+        break;
+      }
+
       let querySymbol = asset.symbol; 
       if (asset.currency === Currency.HKD && !querySymbol.includes('.')) {
           querySymbol = `${querySymbol}.HK`;
