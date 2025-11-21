@@ -1,19 +1,85 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { usePortfolio } from '../context/PortfolioContext';
 import { Card } from './ui/Card';
-import { ArrowUpRight, ArrowDownRight, Pencil, Trash2, History, TrendingUp } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Pencil, Trash2, History, ArrowUp, ArrowDown } from 'lucide-react';
 import { Asset, AssetType, Currency } from '../types';
 
 interface AssetListProps {
     onEdit?: (asset: Asset) => void;
 }
 
+type SortKey = 'symbol' | 'price' | 'cost' | 'quantity' | 'value' | 'pnl';
+type SortDirection = 'asc' | 'desc';
+
 export const AssetList: React.FC<AssetListProps> = ({ onEdit }) => {
   const { assets, deleteAsset, updateAssetPrice } = usePortfolio();
   
-  // Simple internal state for quick valuation update prompt
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({
+    key: 'value', // Default sort by value
+    direction: 'desc'
+  });
+
+  // Quick valuation update state
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [newValuation, setNewValuation] = useState('');
+
+  // Sort Logic
+  const sortedAssets = useMemo(() => {
+    const sorted = [...assets];
+    sorted.sort((a, b) => {
+      let aValue: number | string = 0;
+      let bValue: number | string = 0;
+
+      const getPnl = (asset: Asset) => (asset.quantity * asset.currentPrice) - (asset.quantity * asset.avgCost);
+
+      switch (sortConfig.key) {
+        case 'symbol':
+          aValue = a.symbol.toLowerCase();
+          bValue = b.symbol.toLowerCase();
+          break;
+        case 'price':
+          aValue = a.currentPrice;
+          bValue = b.currentPrice;
+          break;
+        case 'cost':
+          aValue = a.avgCost;
+          bValue = b.avgCost;
+          break;
+        case 'quantity':
+          aValue = a.quantity;
+          bValue = b.quantity;
+          break;
+        case 'value':
+          aValue = a.quantity * a.currentPrice;
+          bValue = b.quantity * b.currentPrice;
+          break;
+        case 'pnl':
+          aValue = getPnl(a);
+          bValue = getPnl(b);
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [assets, sortConfig]);
+
+  const handleSort = (key: SortKey) => {
+    setSortConfig(current => ({
+      key,
+      direction: current.key === key && current.direction === 'desc' ? 'asc' : 'desc',
+    }));
+  };
+
+  const renderSortIcon = (columnKey: SortKey) => {
+    if (sortConfig.key !== columnKey) return <div className="w-4 h-4" />; // Placeholder to prevent layout jump
+    return sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />;
+  };
 
   // Helper for conditional styling
   const getTypeColor = (type: AssetType) => {
@@ -31,7 +97,6 @@ export const AssetList: React.FC<AssetListProps> = ({ onEdit }) => {
   const isManualValuation = (type: AssetType) => 
     type === AssetType.REAL_ESTATE || type === AssetType.LIABILITY || type === AssetType.OTHER;
 
-  // Helper to get currency symbol
   const getCurrencySymbol = (curr: Currency) => {
       switch(curr) {
           case Currency.USD: return '$';
@@ -66,23 +131,38 @@ export const AssetList: React.FC<AssetListProps> = ({ onEdit }) => {
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
+  // Table Header Helper
+  const SortableHeader = ({ label, sortKey, alignRight = false }: { label: string, sortKey: SortKey, alignRight?: boolean }) => (
+    <th 
+      className={`pb-3 font-medium cursor-pointer group select-none ${alignRight ? 'text-right' : 'text-left'} ${alignRight ? 'pr-2' : 'pl-2'}`}
+      onClick={() => handleSort(sortKey)}
+    >
+      <div className={`flex items-center gap-1 ${alignRight ? 'justify-end' : 'justify-start'} text-slate-500 group-hover:text-blue-600 transition-colors`}>
+        {label}
+        <span className="text-slate-400 group-hover:text-blue-500">
+            {renderSortIcon(sortKey)}
+        </span>
+      </div>
+    </th>
+  );
+
   return (
     <Card title="Portfolio Holdings" className="animate-slide-up">
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="text-xs text-slate-400 uppercase border-b border-slate-100">
-              <th className="pb-3 font-medium pl-2">Asset</th>
-              <th className="pb-3 font-medium">Current Price</th>
-              <th className="pb-3 font-medium">Avg Cost / Principal</th>
-              <th className="pb-3 font-medium">Holdings</th>
-              <th className="pb-3 font-medium text-right">Value (Native)</th>
-              <th className="pb-3 font-medium text-right pr-2">Status / P&L</th>
+              <SortableHeader label="Asset" sortKey="symbol" />
+              <SortableHeader label="Current Price" sortKey="price" />
+              <SortableHeader label="Avg Cost" sortKey="cost" />
+              <SortableHeader label="Holdings" sortKey="quantity" />
+              <SortableHeader label="Value (Native)" sortKey="value" alignRight />
+              <SortableHeader label="Status / P&L" sortKey="pnl" alignRight />
               {onEdit && <th className="pb-3 font-medium text-right pr-2">Actions</th>}
             </tr>
           </thead>
           <tbody className="text-sm">
-            {assets.map((asset) => {
+            {sortedAssets.map((asset) => {
               const symbol = getCurrencySymbol(asset.currency);
               const currentValue = asset.quantity * asset.currentPrice;
               const costBasis = asset.quantity * asset.avgCost;
@@ -196,7 +276,7 @@ export const AssetList: React.FC<AssetListProps> = ({ onEdit }) => {
                 </tr>
               );
             })}
-            {assets.length === 0 && (
+            {sortedAssets.length === 0 && (
                 <tr>
                     <td colSpan={onEdit ? 7 : 6} className="text-center py-8 text-slate-400 italic">
                         No assets found. Click "Add Asset" to start tracking.

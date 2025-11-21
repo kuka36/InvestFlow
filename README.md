@@ -1,6 +1,4 @@
-## InvestFlow on GitHub Pages
-
-![GitHub Pages](https://github.com/kuka36/InvestFlow/actions/workflows/pages/pages-build-deployment/badge.svg)
+## Run on GitHub Pages
 
 [![Website](https://img.shields.io/badge/visit-demo-blue)](https://kuka36.github.io/InvestFlow/)
 ![stars](https://img.shields.io/github/stars/kuka36/InvestFlow)
@@ -10,7 +8,6 @@
 ## Run Locally
 
 **Prerequisites:**  Node.js
-
 
 1. Install dependencies:
    `npm install`
