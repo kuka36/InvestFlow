@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { usePortfolio } from '../context/PortfolioContext';
 import { Card } from './ui/Card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { TrendingUp, TrendingDown, DollarSign, Activity, EyeOff } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Activity, EyeOff, Wallet, CreditCard } from 'lucide-react';
 import { convertValue } from '../services/marketData';
 import { AssetType } from '../types';
 
@@ -17,7 +17,8 @@ export const Dashboard: React.FC = () => {
 
   // Calculate Summaries with Currency Conversion (Handling Liabilities)
   const summary = useMemo(() => {
-    let totalBalance = 0;
+    let totalAssetsValue = 0;
+    let totalLiabilitiesValue = 0;
     let totalCost = 0;
     let dayPnL = 0;
 
@@ -32,13 +33,13 @@ export const Dashboard: React.FC = () => {
 
       if (asset.type === AssetType.LIABILITY) {
         // For Liabilities:
-        // Balance decreases Net Worth
-        // Cost (Principal) decreases Net Worth Basis
-        totalBalance -= convertedValue;
-        totalCost -= convertedCost;
-        // No daily P&L volatility for liabilities
+        // Value is debt (positive number in data, conceptually negative for Net Worth)
+        totalLiabilitiesValue += convertedValue;
+        // Cost basis for liability (Principal) is tracked but PnL calc logic differs
+        // For simplicity in this view, we subtract liability cost from total Cost Basis of Net Worth
+        totalCost -= convertedCost; 
       } else {
-        totalBalance += convertedValue;
+        totalAssetsValue += convertedValue;
         totalCost += convertedCost;
         
         // Mocking Day P&L for Market Assets only
@@ -48,13 +49,14 @@ export const Dashboard: React.FC = () => {
       }
     });
 
-    const totalPnL = totalBalance - totalCost;
+    const totalNetWorth = totalAssetsValue - totalLiabilitiesValue;
+    const totalPnL = totalNetWorth - totalCost;
     const totalPnLPercent = totalCost !== 0 ? (totalPnL / Math.abs(totalCost)) * 100 : 0;
 
-    return { totalBalance, totalCost, totalPnL, totalPnLPercent, dayPnL };
+    return { totalNetWorth, totalAssetsValue, totalLiabilitiesValue, totalCost, totalPnL, totalPnLPercent, dayPnL };
   }, [assets, settings.baseCurrency, exchangeRates]);
 
-  // Prepare Pie Chart Data (Assets Only - Exclude Liabilities)
+  // Prepare Pie Chart Data (Assets Only - Exclude Liabilities for Allocation)
   const allocationData = useMemo(() => {
     return assets
       .filter(a => a.type !== AssetType.LIABILITY)
@@ -71,9 +73,8 @@ export const Dashboard: React.FC = () => {
   }, [assets, settings.baseCurrency, exchangeRates]);
 
   // Weighted Volatility Factor for Mock History
-  // If portfolio is mostly Real Estate, line should be flat. If Crypto, volatile.
   const portfolioVolatility = useMemo(() => {
-      if (summary.totalBalance === 0) return 0.01;
+      if (summary.totalNetWorth === 0) return 0.01;
 
       let totalWeightedVol = 0;
       let absoluteTotalValue = 0;
@@ -94,7 +95,7 @@ export const Dashboard: React.FC = () => {
       });
 
       return absoluteTotalValue === 0 ? 0.01 : totalWeightedVol / absoluteTotalValue;
-  }, [assets, summary.totalBalance, settings.baseCurrency, exchangeRates]);
+  }, [assets, summary.totalNetWorth, settings.baseCurrency, exchangeRates]);
 
   // Prepare Mock History Data for Area Chart (Net Worth)
   const historyData = useMemo(() => {
@@ -103,7 +104,7 @@ export const Dashboard: React.FC = () => {
     
     // Fallback if empty
     if (assets.length === 0) balance = 10000;
-    else if (balance === 0) balance = summary.totalBalance * 0.9;
+    else if (balance === 0) balance = summary.totalNetWorth * 0.9;
 
     for (let i = 30; i >= 0; i--) {
       const date = new Date();
@@ -115,7 +116,7 @@ export const Dashboard: React.FC = () => {
       balance += change;
       
       // Smooth landing to current value
-      if (i === 0) balance = summary.totalBalance;
+      if (i === 0) balance = summary.totalNetWorth;
       
       data.push({
         date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
@@ -123,11 +124,11 @@ export const Dashboard: React.FC = () => {
       });
     }
     return data;
-  }, [summary.totalBalance, summary.totalCost, assets.length, portfolioVolatility]);
+  }, [summary.totalNetWorth, summary.totalCost, assets.length, portfolioVolatility]);
 
   const formatCurrency = (val: number) => {
       if (settings.isPrivacyMode) return '****';
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: settings.baseCurrency }).format(val);
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: settings.baseCurrency, maximumFractionDigits: 0 }).format(val);
   };
   
   const formatPercent = (val: number) => {
@@ -139,41 +140,56 @@ export const Dashboard: React.FC = () => {
     <div className="space-y-6 animate-fade-in">
       {/* Top Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* 1. Net Worth */}
         <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
             {settings.isPrivacyMode && <EyeOff className="absolute top-6 right-6 text-blue-400 opacity-50" size={24} />}
             <div className="flex items-center justify-between mb-4">
                 <span className="text-blue-100 font-medium">Total Net Worth</span>
                 <div className="p-2 bg-white/20 rounded-lg"><DollarSign size={20} /></div>
             </div>
-            <div className="text-3xl font-bold mb-1">{formatCurrency(summary.totalBalance)}</div>
-            <div className="text-sm text-blue-100">
-                In {settings.baseCurrency}
+            <div className="text-3xl font-bold mb-1">{formatCurrency(summary.totalNetWorth)}</div>
+            <div className="text-sm text-blue-100 flex items-center gap-2">
+                <span className={summary.totalPnL >= 0 ? "text-green-300" : "text-red-300"}>
+                    {summary.totalPnL >= 0 ? '+' : ''}{formatPercent(summary.totalPnLPercent)}
+                </span>
+                All time
             </div>
         </div>
 
+        {/* 2. Total Assets */}
         <Card className="flex flex-col justify-center">
             <span className="text-slate-500 font-medium mb-2 flex items-center gap-2">
-                Today's P&L <Activity size={16} />
+                <Wallet size={16} className="text-blue-500"/> Total Assets
+            </span>
+            <div className="text-2xl font-bold text-slate-800 mb-1">{formatCurrency(summary.totalAssetsValue)}</div>
+            <div className="text-xs text-slate-400">
+                Gross value before debt
+            </div>
+        </Card>
+
+        {/* 3. Total Liabilities (Red styled if exists) */}
+        <Card className={`flex flex-col justify-center ${summary.totalLiabilitiesValue > 0 ? 'border-red-100 bg-red-50/30' : ''}`}>
+            <span className="text-slate-500 font-medium mb-2 flex items-center gap-2">
+                <CreditCard size={16} className="text-red-500"/> Total Liabilities
+            </span>
+            <div className={`text-2xl font-bold mb-1 ${summary.totalLiabilitiesValue > 0 ? 'text-red-600' : 'text-slate-800'}`}>
+                {summary.totalLiabilitiesValue > 0 ? '-' : ''}{formatCurrency(summary.totalLiabilitiesValue)}
+            </div>
+            <div className="text-xs text-slate-400">
+                Outstanding Loans & Debt
+            </div>
+        </Card>
+
+        {/* 4. Day P&L */}
+        <Card className="flex flex-col justify-center">
+            <span className="text-slate-500 font-medium mb-2 flex items-center gap-2">
+               Today's P&L <Activity size={16} />
             </span>
             <div className="text-2xl font-bold text-slate-800 mb-1">{formatCurrency(summary.dayPnL)}</div>
             <div className={`text-sm font-medium flex items-center gap-1 ${summary.dayPnL >= 0 ? 'text-green-600' : 'text-red-500'}`}>
                 {summary.dayPnL >= 0 ? <TrendingUp size={14}/> : <TrendingDown size={14}/>}
-                {formatPercent(summary.dayPnL !== 0 ? Math.abs(summary.dayPnL / (summary.totalBalance || 1)) * 100 : 0)}
+                {formatPercent(summary.dayPnL !== 0 ? Math.abs(summary.dayPnL / (summary.totalNetWorth || 1)) * 100 : 0)}
             </div>
-        </Card>
-
-        <Card className="flex flex-col justify-center">
-            <span className="text-slate-500 font-medium mb-2">Unrealized P&L</span>
-            <div className="text-2xl font-bold text-slate-800 mb-1">{formatCurrency(summary.totalPnL)}</div>
-            <div className={`text-sm font-medium flex items-center gap-1 ${summary.totalPnL >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                 {summary.totalPnL >= 0 ? '+' : ''}{formatPercent(summary.totalPnLPercent)} All time
-            </div>
-        </Card>
-
-        <Card className="flex flex-col justify-center">
-            <span className="text-slate-500 font-medium mb-2">Active Items</span>
-            <div className="text-2xl font-bold text-slate-800 mb-1">{assets.length}</div>
-            <div className="text-sm text-slate-400">Across {new Set(assets.map(a => a.type)).size} Categories</div>
         </Card>
       </div>
 
@@ -211,7 +227,7 @@ export const Dashboard: React.FC = () => {
         </Card>
 
         {/* Pie Chart */}
-        <Card title={`Asset Allocation (${settings.baseCurrency})`}>
+        <Card title={`Asset Allocation (Gross Assets)`}>
           <div className="h-[300px] w-full flex flex-col items-center justify-center relative">
             {settings.isPrivacyMode ? (
                  <div className="h-full flex flex-col items-center justify-center text-slate-300">

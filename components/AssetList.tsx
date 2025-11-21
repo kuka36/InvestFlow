@@ -54,7 +54,7 @@ export const AssetList: React.FC<AssetListProps> = ({ onEdit, onTransaction }) =
           break;
         case 'value':
           // Sort by Converted Value. 
-          // CRITICAL: Treat Liabilities as negative values so they appear at bottom in Descending sort
+          // CRITICAL: Treat Liabilities as negative values so they appear at bottom in Descending sort (Positive -> Zero -> Negative)
           const valA = convertValue(a.quantity * a.currentPrice, a.currency, settings.baseCurrency, exchangeRates);
           const valB = convertValue(b.quantity * b.currentPrice, b.currency, settings.baseCurrency, exchangeRates);
           aValue = a.type === AssetType.LIABILITY ? -valA : valA;

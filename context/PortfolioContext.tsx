@@ -56,7 +56,6 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
     const saved = localStorage.getItem('investflow_settings');
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Ensure geminiApiKey has a fallback even if not in localStorage (e.g. first load after update)
       return {
         ...INITIAL_SETTINGS,
         ...parsed,
@@ -100,7 +99,7 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
     const updatedList = [...assets, assetWithMeta];
     setAssets(updatedList);
 
-    // 2. Trigger immediate price fetch for the new list
+    // 2. Trigger immediate price fetch for the new list to ensure fresh data
     refreshPrices(updatedList);
   };
 
@@ -150,7 +149,6 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
       setExchangeRates(rates);
 
       // 2. Fetch Asset Prices (Parallel)
-      // Note: fetchStockPrices now returns { price, currency }
       const [cryptoPrices, stockData] = await Promise.all([
         fetchCryptoPrices(targetAssets),
         fetchStockPrices(targetAssets)
@@ -171,12 +169,13 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
           newCurrency = stockData[asset.id].currency;
           timestamp = Date.now();
         } else if (asset.type === AssetType.CASH) {
-            // Smart Cash: Update price based on exchange rate if symbol matches a known currency
-            // Logic: rates are "1 USD = X Unit". So Price in USD = 1 / X.
+            // Smart Cash: Fetch exchange rate against USD automatically
+            // Logic: API rates are "1 USD = X Unit". So Price of 1 Unit in USD = 1 / X.
+            // This treats foreign cash as a commodity priced in USD.
             const rate = rates[asset.symbol];
-            if (rate) {
+            if (rate && rate > 0) {
                 newPrice = 1 / rate;
-                newCurrency = Currency.USD; // Cash value is normalized to USD price per unit
+                newCurrency = Currency.USD; 
                 timestamp = Date.now();
             }
         }
@@ -198,7 +197,6 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const importData = (data: { assets: Asset[], transactions: Transaction[] }) => {
     if (Array.isArray(data.assets)) {
-      // Add default timestamp if missing in imported data
       const assetsWithMeta = data.assets.map(a => ({ ...a, lastUpdated: a.lastUpdated || Date.now() }));
       setAssets(assetsWithMeta);
     }

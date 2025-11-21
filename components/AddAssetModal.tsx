@@ -61,7 +61,9 @@ export const AddAssetModal: React.FC<Props> = ({ isOpen, onClose, initialAsset }
 
   if (!isOpen) return null;
 
-  // Strict manual assets (No API fetch). CASH is now treated as "Market Asset" for Price, but "Manual" for identification if needed
+  // Strict manual assets (No API fetch). 
+  // CASH is excluded because we want to treat it as a Market Asset for pricing (fetched from API)
+  // but still allow the user to input their own cost basis.
   const isStrictManualAsset = (t: AssetType) => 
     t === AssetType.REAL_ESTATE || t === AssetType.LIABILITY || t === AssetType.OTHER;
 
@@ -93,7 +95,6 @@ export const AddAssetModal: React.FC<Props> = ({ isOpen, onClose, initialAsset }
       avgCost: costNum || 0,
       currentPrice: currentPriceNum || 0,
       // Manual assets use selected currency. Market assets (Stock/Crypto/Cash) default to USD logic until API updates them
-      // However, user might want to associate Cash with its currency for display? No, Cash ID is symbol 'CNY'. 
       currency: isStrictManualAsset(type) ? currency : Currency.USD, 
       lastUpdated: Date.now()
     };
@@ -228,7 +229,7 @@ export const AddAssetModal: React.FC<Props> = ({ isOpen, onClose, initialAsset }
                                 />
                             </div>
 
-                            {/* Logic Update: Market Assets OR Cash show Average Cost input. Strict Manual Assets show "Current Price". */}
+                            {/* Logic: Strict Manual Assets show "Current Price". Market Assets AND CASH show Average Cost input. */}
                             {isStrictManualAsset(type) ? (
                                 <div>
                                     <label className="block text-xs font-medium text-slate-500 uppercase mb-1">

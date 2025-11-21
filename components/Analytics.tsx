@@ -8,7 +8,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, ReferenceLine
 } from 'recharts';
 import { AssetType } from '../types';
-import { AlertTriangle, PieChart as PieIcon, Sparkles, Gauge } from 'lucide-react';
+import { AlertTriangle, PieChart as PieIcon, Sparkles, Wallet, CreditCard, Scale } from 'lucide-react';
 
 const COLORS = ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#f97316'];
 const RISK_COLORS = {
@@ -67,7 +67,9 @@ export const Analytics: React.FC = () => {
     };
   }, [assets, settings.geminiApiKey]);
 
-  // 1. Distribution by Asset Type (Converted, Excluding Liabilities)
+  // --- Data Preparations ---
+
+  // 1. Distribution by Asset Type (Excluding Liabilities)
   const typeDistribution = useMemo(() => {
     const dist: Record<string, number> = {};
     assets.forEach(a => {
@@ -82,10 +84,49 @@ export const Analytics: React.FC = () => {
       .sort((a, b) => b.value - a.value);
   }, [assets, settings.baseCurrency, exchangeRates]);
 
-  // 2. Top Assets by Value (Converted, Excluding Liabilities)
+  // 2. Liabilities Distribution
+  const liabilityDistribution = useMemo(() => {
+    return assets
+      .filter(a => a.type === AssetType.LIABILITY)
+      .map(a => {
+        const rawVal = a.quantity * a.currentPrice;
+        const val = convertValue(rawVal, a.currency, settings.baseCurrency, exchangeRates);
+        return { name: a.name || a.symbol, value: val };
+      })
+      .sort((a, b) => b.value - a.value);
+  }, [assets, settings.baseCurrency, exchangeRates]);
+
+  // 3. Balance Sheet Summary (Assets vs Liabilities)
+  const balanceSheet = useMemo(() => {
+    let totalAssets = 0;
+    let totalLiabilities = 0;
+
+    assets.forEach(a => {
+      const rawVal = a.quantity * a.currentPrice;
+      const val = convertValue(rawVal, a.currency, settings.baseCurrency, exchangeRates);
+      
+      if (a.type === AssetType.LIABILITY) {
+        totalLiabilities += val;
+      } else {
+        totalAssets += val;
+      }
+    });
+
+    return { 
+      data: [
+        { name: 'Assets', value: totalAssets, fill: '#10b981' }, // Green
+        { name: 'Liabilities', value: totalLiabilities, fill: '#ef4444' } // Red
+      ],
+      totalAssets,
+      totalLiabilities,
+      ratio: totalAssets > 0 ? (totalLiabilities / totalAssets) * 100 : 0
+    };
+  }, [assets, settings.baseCurrency, exchangeRates]);
+
+  // 4. Top Assets by Value (Excluding Liabilities)
   const topAssets = useMemo(() => {
     return [...assets]
-      .filter(a => a.type !== AssetType.LIABILITY) // Exclude Liabilities from Top Assets
+      .filter(a => a.type !== AssetType.LIABILITY) 
       .map(a => {
         const value = convertValue(a.quantity * a.currentPrice, a.currency, settings.baseCurrency, exchangeRates);
         const cost = convertValue(a.quantity * a.avgCost, a.currency, settings.baseCurrency, exchangeRates);
@@ -100,7 +141,7 @@ export const Analytics: React.FC = () => {
       .slice(0, 6);
   }, [assets, settings.baseCurrency, exchangeRates]);
 
-  // 3. Visual Risk Distribution (Converted)
+  // 5. Visual Risk Distribution (Assets Only)
   const riskProfile = useMemo(() => {
     let high = 0, med = 0, low = 0;
     assets.forEach(a => {
@@ -125,10 +166,10 @@ export const Analytics: React.FC = () => {
     ].filter(x => x.value > 0);
   }, [assets, settings.baseCurrency, exchangeRates]);
 
-  // 4. P&L Ranking (Converted, Exclude Liabilities)
+  // 6. P&L Ranking
   const pnlRanking = useMemo(() => {
     return [...assets]
-      .filter(a => a.type !== AssetType.LIABILITY) // Exclude Liabilities
+      .filter(a => a.type !== AssetType.LIABILITY)
       .map(a => {
         const value = convertValue(a.quantity * a.currentPrice, a.currency, settings.baseCurrency, exchangeRates);
         const cost = convertValue(a.quantity * a.avgCost, a.currency, settings.baseCurrency, exchangeRates);
@@ -152,16 +193,84 @@ export const Analytics: React.FC = () => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center gap-3 mb-2">
          <h1 className="text-2xl font-bold text-slate-800">Portfolio Analytics</h1>
-         <span className="px-2 py-1 bg-blue-50 text-blue-600 text-xs font-medium rounded-full border border-blue-100">
-            Pro Insights
-         </span>
+      </div>
+
+      {/* New Section: Balance Sheet Analysis */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Debt Ratio Indicator */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-center items-center md:col-span-1 relative overflow-hidden">
+              <h3 className="text-slate-500 font-medium mb-4 flex items-center gap-2 z-10">
+                  <Scale size={18} /> Debt-to-Asset Ratio
+              </h3>
+              
+              <div className="relative z-10 text-center">
+                 <div className={`text-4xl font-bold mb-1 ${balanceSheet.ratio > 50 ? 'text-red-500' : (balanceSheet.ratio > 30 ? 'text-orange-500' : 'text-green-600')}`}>
+                     {balanceSheet.ratio.toFixed(1)}%
+                 </div>
+                 <div className="text-xs text-slate-400">
+                     {balanceSheet.ratio > 30 ? "Consider reducing leverage" : "Healthy leverage level"}
+                 </div>
+              </div>
+
+              {/* Background visual element */}
+              <div className={`absolute bottom-0 left-0 h-2 transition-all duration-1000 ${balanceSheet.ratio > 50 ? 'bg-red-500' : 'bg-green-500'}`} style={{width: `${Math.min(balanceSheet.ratio, 100)}%`}}></div>
+          </div>
+
+          {/* Assets vs Liabilities Bar Chart */}
+          <Card title="Balance Sheet (Assets vs Liabilities)" className="md:col-span-2">
+             <div className="h-[200px] w-full">
+                <ResponsiveContainer>
+                    <BarChart data={balanceSheet.data} layout="vertical" margin={{left: 20, right: 20}}>
+                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                        <XAxis type="number" tickFormatter={formatCurrency} hide />
+                        <YAxis dataKey="name" type="category" width={80} tick={{fontSize: 12, fill: '#64748b'}} axisLine={false} tickLine={false}/>
+                        <RechartsTooltip 
+                            cursor={{fill: 'transparent'}}
+                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            formatter={(val: number) => formatCurrency(val)}
+                        />
+                        <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={24} label={{ position: 'right', formatter: formatCurrency, fontSize: 12, fill: '#64748b' }} />
+                    </BarChart>
+                </ResponsiveContainer>
+             </div>
+          </Card>
       </div>
       
+      {/* If Liabilities exist, show specific breakdown */}
+      {liabilityDistribution.length > 0 && (
+          <Card title="Liability Breakdown">
+             <div className="h-[250px] w-full">
+                <ResponsiveContainer>
+                    <PieChart>
+                        <Pie
+                        data={liabilityDistribution}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                        >
+                        {liabilityDistribution.map((entry, index) => (
+                            <Cell key={`cell-liab-${index}`} fill={index % 2 === 0 ? '#ef4444' : '#f87171'} stroke="none" />
+                        ))}
+                        </Pie>
+                        <RechartsTooltip 
+                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            formatter={(val: number) => formatCurrency(val)}
+                        />
+                        <Legend />
+                    </PieChart>
+                </ResponsiveContainer>
+             </div>
+          </Card>
+      )}
+
       {/* Top Row: Distribution & Risk */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Asset Allocation */}
-        <Card title={`Allocation (${settings.baseCurrency})`} className="lg:col-span-1">
+        <Card title={`Asset Allocation (Gross Assets)`} className="lg:col-span-1">
           <div className="h-[250px] w-full">
             <ResponsiveContainer>
               <PieChart>
@@ -303,7 +412,7 @@ export const Analytics: React.FC = () => {
         </Card>
 
         {/* P&L Performance */}
-        <Card title="P&L Leaders & Laggards">
+        <Card title="P&L Leaders & Laggards (Assets)">
            <div className="h-[300px] w-full">
             <ResponsiveContainer>
               <BarChart data={pnlRanking} margin={{top: 20, bottom: 0}}>
