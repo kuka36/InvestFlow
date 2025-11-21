@@ -123,13 +123,17 @@ export const AddAssetModal: React.FC<Props> = ({ isOpen, onClose, initialAsset }
                  <option value={AssetType.STOCK}>Stock (US/HK/CN)</option>
                  <option value={AssetType.CRYPTO}>Crypto</option>
                  <option value={AssetType.FUND}>Fund / ETF</option>
+                 <option value={AssetType.REAL_ESTATE}>Real Estate</option>
                  <option value={AssetType.CASH}>Cash / FX</option>
+                 <option value={AssetType.LIABILITY}>Liability (Loan/Debt)</option>
                </select>
             </div>
             <div className="col-span-2 md:col-span-1">
-               <label className="block text-xs font-medium text-slate-500 uppercase mb-1">Symbol / Ticker</label>
+               <label className="block text-xs font-medium text-slate-500 uppercase mb-1">
+                 {type === AssetType.LIABILITY ? 'Name / Ref' : 'Symbol / Ticker'}
+               </label>
                <input 
-                type="text" placeholder="e.g. AAPL, BTC"
+                type="text" placeholder={type === AssetType.LIABILITY ? "e.g. Mortgage, Car Loan" : "e.g. AAPL, BTC"}
                 value={symbol} onChange={e => setSymbol(e.target.value)}
                 className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 required
@@ -158,7 +162,7 @@ export const AddAssetModal: React.FC<Props> = ({ isOpen, onClose, initialAsset }
             </div>
             <div>
                <label className="block text-xs font-medium text-slate-500 uppercase mb-1">
-                   {mode === EntryMode.SIMPLE ? 'Average Cost' : 'Buy Price'}
+                   {type === AssetType.LIABILITY ? 'Original Amount' : (mode === EntryMode.SIMPLE ? 'Average Cost' : 'Buy Price')}
                </label>
                <div className="relative">
                  <span className="absolute left-3 top-2.5 text-slate-400">$</span>
@@ -183,7 +187,7 @@ export const AddAssetModal: React.FC<Props> = ({ isOpen, onClose, initialAsset }
             className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-md shadow-blue-200 transition-all flex items-center justify-center gap-2"
           >
             <Save size={18}/>
-            {isEditing ? 'Save Changes' : 'Save Asset'}
+            {isEditing ? 'Save Changes' : 'Save Investment'}
           </button>
 
         </form>

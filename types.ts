@@ -3,6 +3,8 @@ export enum AssetType {
   CRYPTO = 'CRYPTO',
   FUND = 'FUND',
   CASH = 'CASH',
+  REAL_ESTATE = 'REAL_ESTATE',
+  LIABILITY = 'LIABILITY',
   OTHER = 'OTHER'
 }
 

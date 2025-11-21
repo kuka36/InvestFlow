@@ -10,11 +10,11 @@ import {
 import { AssetType } from '../types';
 import { AlertTriangle, PieChart as PieIcon, Sparkles, Gauge } from 'lucide-react';
 
-const COLORS = ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#6366f1'];
+const COLORS = ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#f97316'];
 const RISK_COLORS = {
   High: '#ef4444', // Crypto
   Medium: '#f59e0b', // Stock
-  Low: '#10b981', // Fund/Cash
+  Low: '#10b981', // Fund/Cash/RealEstate
 };
 
 interface RiskData {
@@ -60,10 +60,12 @@ export const Analytics: React.FC = () => {
     };
   }, [assets]);
 
-  // 1. Distribution by Asset Type (Converted)
+  // 1. Distribution by Asset Type (Converted, Excluding Liabilities)
   const typeDistribution = useMemo(() => {
     const dist: Record<string, number> = {};
     assets.forEach(a => {
+      if (a.type === AssetType.LIABILITY) return; // Exclude debt from asset breakdown
+
       const rawVal = a.quantity * a.currentPrice;
       const val = convertValue(rawVal, a.currency, settings.baseCurrency, exchangeRates);
       dist[a.type] = (dist[a.type] || 0) + val;
@@ -73,9 +75,10 @@ export const Analytics: React.FC = () => {
       .sort((a, b) => b.value - a.value);
   }, [assets, settings.baseCurrency, exchangeRates]);
 
-  // 2. Top Assets by Value & Cost Comparison (Converted)
+  // 2. Top Assets by Value (Converted, Excluding Liabilities)
   const topAssets = useMemo(() => {
     return [...assets]
+      .filter(a => a.type !== AssetType.LIABILITY)
       .sort((a, b) => {
           const valA = convertValue(a.quantity * a.currentPrice, a.currency, settings.baseCurrency, exchangeRates);
           const valB = convertValue(b.quantity * b.currentPrice, b.currency, settings.baseCurrency, exchangeRates);
@@ -98,11 +101,14 @@ export const Analytics: React.FC = () => {
   const riskProfile = useMemo(() => {
     let high = 0, med = 0, low = 0;
     assets.forEach(a => {
+        if (a.type === AssetType.LIABILITY) return; // Liabilities don't have standard "Risk" in this context
+
         const rawVal = a.quantity * a.currentPrice;
         const val = convertValue(rawVal, a.currency, settings.baseCurrency, exchangeRates);
         
         if(a.type === AssetType.CRYPTO) high += val;
         else if(a.type === AssetType.STOCK) med += val;
+        else if(a.type === AssetType.REAL_ESTATE) low += val; // Real Estate treated as stable/low here
         else low += val; // Funds, Cash
     });
     
@@ -112,11 +118,11 @@ export const Analytics: React.FC = () => {
     return [
         { name: 'High (Crypto)', value: high, color: RISK_COLORS.High },
         { name: 'Medium (Stocks)', value: med, color: RISK_COLORS.Medium },
-        { name: 'Low (Cash/Funds)', value: low, color: RISK_COLORS.Low }
+        { name: 'Low (Cash/Real Estate)', value: low, color: RISK_COLORS.Low }
     ].filter(x => x.value > 0);
   }, [assets, settings.baseCurrency, exchangeRates]);
 
-  // 4. P&L Ranking (Converted)
+  // 4. P&L Ranking (Converted, Includes all because paying off debt is a "gain" in NW)
   const pnlRanking = useMemo(() => {
     return [...assets]
       .map(a => {
@@ -179,7 +185,7 @@ export const Analytics: React.FC = () => {
         </Card>
 
         {/* Risk Profile */}
-        <Card className="lg:col-span-2" title="Risk Exposure Profile">
+        <Card className="lg:col-span-2" title="Risk Exposure Profile (Assets)">
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center h-full">
              <div className="h-[250px]">
                 <ResponsiveContainer>
@@ -262,7 +268,7 @@ export const Analytics: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
         {/* Cost vs Value */}
-        <Card title="Top Holdings: Cost vs Value">
+        <Card title="Top Assets: Cost vs Value">
            <div className="h-[300px] w-full">
             <ResponsiveContainer>
               <BarChart data={topAssets} layout="vertical" margin={{ left: 0, right: 20, top: 10, bottom: 0 }}>

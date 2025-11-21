@@ -4,13 +4,14 @@ import { Card } from './ui/Card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { TrendingUp, TrendingDown, DollarSign, Activity, EyeOff } from 'lucide-react';
 import { convertValue } from '../services/marketData';
+import { AssetType } from '../types';
 
-const COLORS = ['#0ea5e9', '#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b'];
+const COLORS = ['#0ea5e9', '#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#f97316'];
 
 export const Dashboard: React.FC = () => {
   const { assets, settings, exchangeRates } = usePortfolio();
 
-  // Calculate Summaries with Currency Conversion
+  // Calculate Summaries with Currency Conversion (Handling Liabilities)
   const summary = useMemo(() => {
     let totalBalance = 0;
     let totalCost = 0;
@@ -25,45 +26,61 @@ export const Dashboard: React.FC = () => {
       const convertedValue = convertValue(nativeValue, asset.currency, settings.baseCurrency, exchangeRates);
       const convertedCost = convertValue(nativeCost, asset.currency, settings.baseCurrency, exchangeRates);
 
-      totalBalance += convertedValue;
-      totalCost += convertedCost;
-      
-      // Mocking Day PnL (since we don't store "yesterday's price" in this simple model)
-      // In a real app, we would convert (currentPrice - prevClose) * qty
-      dayPnL += convertedValue * (Math.random() * 0.03 - 0.01); 
+      if (asset.type === AssetType.LIABILITY) {
+        // For Liabilities:
+        // Balance decreases Net Worth
+        // Cost (Principal) decreases Net Worth Basis
+        totalBalance -= convertedValue;
+        totalCost -= convertedCost;
+        // If Liability Value didn't change, PnL is 0.
+        // We add small fake volatility for demo unless it's a liability which is usually stable
+        dayPnL -= convertedValue * (Math.random() * 0.005 - 0.001); 
+      } else {
+        totalBalance += convertedValue;
+        totalCost += convertedCost;
+        
+        // Mocking Day PnL
+        dayPnL += convertedValue * (Math.random() * 0.03 - 0.01); 
+      }
     });
 
     const totalPnL = totalBalance - totalCost;
-    const totalPnLPercent = totalCost > 0 ? (totalPnL / totalCost) * 100 : 0;
+    const totalPnLPercent = totalCost !== 0 ? (totalPnL / Math.abs(totalCost)) * 100 : 0;
 
     return { totalBalance, totalCost, totalPnL, totalPnLPercent, dayPnL };
   }, [assets, settings.baseCurrency, exchangeRates]);
 
-  // Prepare Pie Chart Data (in Base Currency)
+  // Prepare Pie Chart Data (Assets Only - Exclude Liabilities)
   const allocationData = useMemo(() => {
-    return assets.map(asset => {
-      const nativeValue = asset.quantity * asset.currentPrice;
-      const convertedValue = convertValue(nativeValue, asset.currency, settings.baseCurrency, exchangeRates);
-      return {
-        name: asset.symbol,
-        value: convertedValue
-      };
-    }).filter(d => d.value > 0).sort((a, b) => b.value - a.value);
+    return assets
+      .filter(a => a.type !== AssetType.LIABILITY)
+      .map(asset => {
+        const nativeValue = asset.quantity * asset.currentPrice;
+        const convertedValue = convertValue(nativeValue, asset.currency, settings.baseCurrency, exchangeRates);
+        return {
+          name: asset.symbol,
+          value: convertedValue
+        };
+      })
+      .filter(d => d.value > 0)
+      .sort((a, b) => b.value - a.value);
   }, [assets, settings.baseCurrency, exchangeRates]);
 
-  // Prepare Mock History Data for Area Chart
+  // Prepare Mock History Data for Area Chart (Net Worth)
   const historyData = useMemo(() => {
     const data = [];
-    let balance = summary.totalCost || 10000; 
-    // If total cost is 0 (empty), default to a small number to show graph
-    if (balance === 0 && assets.length > 0) balance = summary.totalBalance * 0.9;
+    let balance = summary.totalCost; // Start from "Cost" basis roughly
+    
+    // Fallback if empty
+    if (assets.length === 0) balance = 10000;
+    else if (balance === 0) balance = summary.totalBalance * 0.9;
 
     for (let i = 30; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
       
-      // Random walk for history
-      const volatility = (Math.random() - 0.45) * (balance * 0.02);
+      // Random walk
+      const volatility = (Math.random() - 0.45) * (Math.abs(balance) * 0.02);
       balance += volatility;
       
       // Force end point to match current
@@ -71,7 +88,7 @@ export const Dashboard: React.FC = () => {
       
       data.push({
         date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        value: Math.max(0, balance)
+        value: balance
       });
     }
     return data;
@@ -110,7 +127,7 @@ export const Dashboard: React.FC = () => {
             <div className="text-2xl font-bold text-slate-800 mb-1">{formatCurrency(summary.dayPnL)}</div>
             <div className={`text-sm font-medium flex items-center gap-1 ${summary.dayPnL >= 0 ? 'text-green-600' : 'text-red-500'}`}>
                 {summary.dayPnL >= 0 ? <TrendingUp size={14}/> : <TrendingDown size={14}/>}
-                {formatPercent(Math.abs(summary.dayPnL / (summary.totalBalance || 1)) * 100)}
+                {formatPercent(summary.dayPnL !== 0 ? Math.abs(summary.dayPnL / (summary.totalBalance || 1)) * 100 : 0)}
             </div>
         </Card>
 
@@ -123,7 +140,7 @@ export const Dashboard: React.FC = () => {
         </Card>
 
         <Card className="flex flex-col justify-center">
-            <span className="text-slate-500 font-medium mb-2">Active Assets</span>
+            <span className="text-slate-500 font-medium mb-2">Active Items</span>
             <div className="text-2xl font-bold text-slate-800 mb-1">{assets.length}</div>
             <div className="text-sm text-slate-400">Across {new Set(assets.map(a => a.type)).size} Categories</div>
         </Card>
@@ -163,7 +180,7 @@ export const Dashboard: React.FC = () => {
         </Card>
 
         {/* Pie Chart */}
-        <Card title={`Allocation (${settings.baseCurrency})`}>
+        <Card title={`Asset Allocation (${settings.baseCurrency})`}>
           <div className="h-[300px] w-full flex flex-col items-center justify-center relative">
             {settings.isPrivacyMode ? (
                  <div className="h-full flex flex-col items-center justify-center text-slate-300">
@@ -206,7 +223,7 @@ export const Dashboard: React.FC = () => {
                 {allocationData.slice(0, 4).map((entry, idx) => (
                     <div key={entry.name} className="flex items-center gap-1 text-xs text-slate-500">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
-                        {entry.name} {((entry.value / (summary.totalBalance || 1)) * 100).toFixed(0)}%
+                        {entry.name} {((entry.value / (allocationData.reduce((acc, c) => acc + c.value, 0) || 1)) * 100).toFixed(0)}%
                     </div>
                 ))}
             </div>

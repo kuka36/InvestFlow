@@ -18,6 +18,8 @@ export const AssetList: React.FC<AssetListProps> = ({ onEdit }) => {
         case AssetType.CRYPTO: return 'bg-purple-100 text-purple-700';
         case AssetType.FUND: return 'bg-orange-100 text-orange-700';
         case AssetType.CASH: return 'bg-green-100 text-green-700';
+        case AssetType.REAL_ESTATE: return 'bg-amber-100 text-amber-800';
+        case AssetType.LIABILITY: return 'bg-red-100 text-red-700';
         default: return 'bg-slate-100 text-slate-700';
     }
   };
@@ -46,7 +48,7 @@ export const AssetList: React.FC<AssetListProps> = ({ onEdit }) => {
             <tr className="text-xs text-slate-400 uppercase border-b border-slate-100">
               <th className="pb-3 font-medium pl-2">Asset</th>
               <th className="pb-3 font-medium">Price (Native)</th>
-              <th className="pb-3 font-medium">Avg Cost</th>
+              <th className="pb-3 font-medium">Avg Cost / Principal</th>
               <th className="pb-3 font-medium">Holdings</th>
               <th className="pb-3 font-medium text-right">Value (Native)</th>
               <th className="pb-3 font-medium text-right pr-2">P&L</th>
@@ -60,6 +62,7 @@ export const AssetList: React.FC<AssetListProps> = ({ onEdit }) => {
               const costBasis = asset.quantity * asset.avgCost;
               const pnl = currentValue - costBasis;
               const pnlPercent = costBasis > 0 ? (pnl / costBasis) * 100 : 0;
+              const isLiability = asset.type === AssetType.LIABILITY;
 
               return (
                 <tr key={asset.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group">
@@ -90,8 +93,8 @@ export const AssetList: React.FC<AssetListProps> = ({ onEdit }) => {
                   <td className="py-4">
                     <div className="font-medium text-slate-700">{asset.quantity.toLocaleString()}</div>
                   </td>
-                  <td className="py-4 text-right font-semibold text-slate-800">
-                    {symbol}{currentValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                  <td className={`py-4 text-right font-semibold ${isLiability ? 'text-red-700' : 'text-slate-800'}`}>
+                    {isLiability ? '-' : ''}{symbol}{currentValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                   </td>
                   <td className="py-4 text-right pr-2">
                     <div className={`flex items-center justify-end gap-1 font-medium ${pnl >= 0 ? 'text-green-600' : 'text-red-500'}`}>
