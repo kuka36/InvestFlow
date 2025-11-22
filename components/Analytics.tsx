@@ -192,9 +192,9 @@ export const Analytics: React.FC = () => {
       {/* --- Section 1: Financial Health (The Big Picture) --- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* 1. Net Worth Structure */}
-          <Card title={t('netWorthStructure')} className="md:col-span-2">
-             <div className="h-[200px] w-full">
-                <ResponsiveContainer>
+          <Card title={t('netWorthStructure')} className="md:col-span-2 min-w-0">
+             <div className="h-[200px] w-full min-w-0">
+                <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={balanceSheet.data} layout="vertical" margin={{left: 0, right: 40, top: 0, bottom: 0}} barSize={32}>
                         <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                         <XAxis type="number" tickFormatter={formatCurrency} tick={{fontSize: 11, fill: '#94a3b8'}} axisLine={false} tickLine={false}/>
@@ -247,9 +247,9 @@ export const Analytics: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Asset Allocation */}
-        <Card title={t('assetAllocation')} className="lg:col-span-1">
-          <div className="h-[240px] w-full">
-            <ResponsiveContainer>
+        <Card title={t('assetAllocation')} className="lg:col-span-1 min-w-0">
+          <div className="h-[240px] w-full min-w-0">
+            <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={typeDistribution}
@@ -275,10 +275,10 @@ export const Analytics: React.FC = () => {
         </Card>
 
         {/* Risk Profile & AI Insight */}
-        <Card className="lg:col-span-2" title={t('riskAnalysis')}>
+        <Card className="lg:col-span-2 min-w-0" title={t('riskAnalysis')}>
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center h-full">
-             <div className="h-[240px]">
-                <ResponsiveContainer>
+             <div className="h-[240px] min-w-0">
+                <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                     <Pie
                     data={riskProfile}
@@ -386,9 +386,9 @@ export const Analytics: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
         {/* Cost vs Value */}
-        <Card title={t('costVsValue')}>
-           <div className="h-[250px] w-full">
-            <ResponsiveContainer>
+        <Card title={t('costVsValue')} className="min-w-0">
+           <div className="h-[250px] w-full min-w-0">
+            <ResponsiveContainer width="100%" height="100%">
               <BarChart data={topAssets} layout="vertical" margin={{ left: 0, right: 10, top: 0, bottom: 0 }} barGap={2}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                 <XAxis type="number" tickFormatter={formatCurrency} hide />
@@ -413,9 +413,9 @@ export const Analytics: React.FC = () => {
         </Card>
 
         {/* P&L Performance */}
-        <Card title={t('topMovers')}>
-           <div className="h-[250px] w-full">
-            <ResponsiveContainer>
+        <Card title={t('topMovers')} className="min-w-0">
+           <div className="h-[250px] w-full min-w-0">
+            <ResponsiveContainer width="100%" height="100%">
               <BarChart data={pnlRanking} margin={{top: 20, bottom: 0}}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" tick={{fontSize: 11, fill: '#64748b'}} axisLine={false} tickLine={false} />
@@ -446,8 +446,8 @@ export const Analytics: React.FC = () => {
 
         {/* Liability Breakdown (Conditional Row) */}
         {liabilityDistribution.length > 0 && (
-            <Card title={t('liabilityBreakdown')} className="md:col-span-2">
-                 <div className="h-[180px] w-full flex items-center justify-center">
+            <Card title={t('liabilityBreakdown')} className="md:col-span-2 min-w-0">
+                 <div className="h-[180px] w-full flex items-center justify-center min-w-0">
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Pie

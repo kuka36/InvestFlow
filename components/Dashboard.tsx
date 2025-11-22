@@ -207,8 +207,8 @@ export const Dashboard: React.FC = () => {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Line Chart */}
-        <Card title={t('netWorthTrend')} className="lg:col-span-2">
-          <div className="h-[300px] w-full">
+        <Card title={t('netWorthTrend')} className="lg:col-span-2 min-w-0">
+          <div className="h-[300px] w-full min-w-0">
             {settings.isPrivacyMode ? (
                 <div className="h-full flex flex-col items-center justify-center text-slate-300">
                     <EyeOff size={48} className="mb-2"/>
@@ -241,10 +241,10 @@ export const Dashboard: React.FC = () => {
         </Card>
 
         {/* Pie Chart */}
-        <Card title={`${t('assetAllocation')} (${settings.baseCurrency})`}>
-          <div className="h-[300px] w-full flex flex-col items-center justify-center relative">
+        <Card title={`${t('assetAllocation')} (${settings.baseCurrency})`} className="min-w-0">
+          <div className="h-[300px] w-full relative min-w-0">
             {settings.isPrivacyMode ? (
-                 <div className="h-full flex flex-col items-center justify-center text-slate-300">
+                 <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-300">
                     <EyeOff size={48} className="mb-2"/>
                     <p>{t('hidden')}</p>
                 </div>
@@ -280,7 +280,7 @@ export const Dashboard: React.FC = () => {
             )}
           </div>
           {!settings.isPrivacyMode && (
-            <div className="flex flex-wrap gap-2 justify-center pb-2">
+            <div className="flex flex-wrap gap-2 justify-center pb-2 mt-2">
                 {allocationData.slice(0, 4).map((entry, idx) => (
                     <div key={entry.name} className="flex items-center gap-1 text-xs text-slate-500">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>

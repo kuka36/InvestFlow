@@ -219,11 +219,11 @@ export const AssetList: React.FC<AssetListProps> = ({ onEdit, onTransaction }) =
                     ) : (
                         <div className="font-medium text-slate-700 flex items-center gap-2">
                             {symbol}{asset.currentPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 6})}
-                            {isManual && onEdit && (
+                            {onEdit && (
                                 <button 
                                     onClick={() => handleUpdateClick(asset)}
                                     className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-300 hover:text-blue-600"
-                                    title="Update Valuation"
+                                    title="Update Price"
                                 >
                                     <History size={14} />
                                 </button>
@@ -311,4 +311,3 @@ export const AssetList: React.FC<AssetListProps> = ({ onEdit, onTransaction }) =
     </Card>
   );
 };
-                            
