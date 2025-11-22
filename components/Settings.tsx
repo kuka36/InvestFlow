@@ -3,7 +3,7 @@ import { usePortfolio } from '../context/PortfolioContext';
 import { Card } from './ui/Card';
 import { Currency, Language } from '../types';
 import { 
-  Download, Upload, Trash2, Shield, Globe, AlertTriangle, CheckCircle, Key, Languages, Activity
+  Download, Upload, Trash2, Shield, Globe, AlertTriangle, CheckCircle, Key, Languages, Activity, Lock
 } from 'lucide-react';
 
 export const Settings: React.FC = () => {
@@ -213,6 +213,11 @@ export const Settings: React.FC = () => {
                     {importStatus.msg}
                 </div>
             )}
+
+            <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-3 flex items-start gap-3">
+                <Lock size={16} className="text-blue-500 mt-0.5 shrink-0" />
+                <span className="text-sm text-blue-700">{t('localDataSecurity')}</span>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Export */}

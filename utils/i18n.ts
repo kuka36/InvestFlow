@@ -108,7 +108,7 @@ export const translations: Record<Language, Record<string, string>> = {
     riskAnalysis: "Risk Analysis",
     aiAssessment: "AI Assessment",
     startRiskAnalysis: "Start Risk Analysis",
-    recalculate: "Recalculate Risk Analysis",
+    recalculate: "Recalculate",
     costVsValue: "Cost vs. Value",
     topMovers: "Top Movers",
     liabilityBreakdown: "Liability Breakdown",
@@ -147,6 +147,7 @@ export const translations: Record<Language, Record<string, string>> = {
     importSuccess: "Data imported successfully!",
     importError: "Failed to parse file. Invalid JSON.",
     resetSuccess: "All data has been reset.",
+    localDataSecurity: "Data is stored locally on your device. Safe and secure.",
 
     // AI Advisor
     aiInsights: "AI Portfolio Insights",
@@ -257,7 +258,7 @@ export const translations: Record<Language, Record<string, string>> = {
     riskAnalysis: "风险分析",
     aiAssessment: "AI 评估",
     startRiskAnalysis: "开始风险分析",
-    recalculate: "重新计算风险",
+    recalculate: "重新计算",
     costVsValue: "成本 vs 市值",
     topMovers: "盈亏排行",
     liabilityBreakdown: "负债明细",
@@ -295,6 +296,7 @@ export const translations: Record<Language, Record<string, string>> = {
     importSuccess: "数据导入成功！",
     importError: "文件解析失败。无效的 JSON。",
     resetSuccess: "所有数据已重置。",
+    localDataSecurity: "本地保存数据，放心安全存储。",
 
     aiInsights: "AI 投资组合洞察",
     wealthManagement: "财富管理与优化建议",

@@ -1,5 +1,5 @@
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { usePortfolio } from '../context/PortfolioContext';
 import { getRiskAssessment } from '../services/geminiService';
 import { convertValue } from '../services/marketData';
@@ -180,6 +180,25 @@ export const Analytics: React.FC = () => {
     );
   }
 
+  const riskCardTitle = (
+    <>
+        <div className="p-2 bg-purple-600 rounded-lg shadow-lg shadow-purple-200">
+            <Sparkles className="text-white" size={20} />
+        </div>
+        <span>{t('riskAnalysis')}</span>
+    </>
+  );
+
+  const riskCardAction = (
+    <button 
+        onClick={handleRefreshRisk}
+        disabled={loadingRisk}
+        className="text-sm px-4 py-2 bg-white border border-slate-200 hover:border-purple-300 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-all flex items-center gap-2 shadow-sm font-medium"
+    >
+        {loadingRisk ? <RefreshCw className="animate-spin" size={16}/> : <><Sparkles size={16} /> {riskData ? t('recalculate') : t('startRiskAnalysis')}</>}
+    </button>
+  );
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-2 mb-2">
@@ -275,7 +294,7 @@ export const Analytics: React.FC = () => {
         </Card>
 
         {/* Risk Profile & AI Insight - UPDATED */}
-        <Card className="lg:col-span-2 min-w-0" title={t('riskAnalysis')}>
+        <Card className="lg:col-span-2 min-w-0" title={riskCardTitle} action={riskCardAction}>
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
              <div className="h-[240px] min-w-0 flex flex-col justify-center">
                 <ResponsiveContainer width="100%" height="100%">
@@ -318,17 +337,6 @@ export const Analytics: React.FC = () => {
                             </div>
                             {t('aiAssessment')}
                         </h4>
-                        
-                        {riskData && (
-                           <button 
-                                onClick={handleRefreshRisk} 
-                                disabled={loadingRisk}
-                                className="p-1.5 hover:bg-white hover:shadow-sm rounded-lg text-slate-400 hover:text-purple-600 transition-all"
-                                title={t('recalculate')}
-                            >
-                                <RefreshCw size={14} className={loadingRisk ? "animate-spin" : ""} />
-                            </button>
-                        )}
                      </div>
 
                      <div className="flex-1 flex flex-col justify-center relative z-10">
@@ -375,14 +383,8 @@ export const Analytics: React.FC = () => {
                                 </div>
                              </div>
                          ) : (
-                             <div className="text-center">
-                                <button 
-                                    onClick={handleRefreshRisk}
-                                    className="px-5 py-2.5 bg-white hover:bg-purple-50 text-purple-600 border border-purple-100 hover:border-purple-200 text-sm font-medium rounded-xl transition-all shadow-sm hover:shadow flex items-center gap-2 mx-auto group"
-                                >
-                                    <Zap size={16} className="group-hover:fill-purple-600 transition-colors" />
-                                    {t('startRiskAnalysis')}
-                                </button>
+                             <div className="text-center text-xs text-slate-400 italic p-4 bg-slate-50 rounded-xl border border-slate-100 border-dashed">
+                                {t('startRiskAnalysis')}...
                              </div>
                          )}
                      </div>
