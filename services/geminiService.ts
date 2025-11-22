@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { Asset, AssetType, Language } from "../types";
 
@@ -44,7 +43,7 @@ export const getPortfolioAnalysis = async (assets: Asset[], apiKey: string, lang
         }
       }
     } catch (e) {
-      console.warn("InvestFlow: Advisor Cache parse error", e);
+      console.warn("PanassetLite: Advisor Cache parse error", e);
     }
   }
 
@@ -68,7 +67,7 @@ export const getPortfolioAnalysis = async (assets: Asset[], apiKey: string, lang
 
     // Optimized System Prompt for Comprehensive Wealth Management with Privacy Protection
     const prompt = `
-    You are the Chief Investment Officer (CIO) for 'InvestFlow', a private wealth management platform.
+    You are the Chief Investment Officer (CIO) for 'PanassetLite' (盘资产·轻), a private wealth management platform.
 
     **User Portfolio Snapshot (For Analysis Only):**
     ${JSON.stringify(portfolioSummary)}
@@ -118,7 +117,7 @@ export const getPortfolioAnalysis = async (assets: Asset[], apiKey: string, lang
         data: textResult
       }));
     } catch (e) {
-      console.warn("InvestFlow: Failed to save advisor cache", e);
+      console.warn("PanassetLite: Failed to save advisor cache", e);
     }
 
     return textResult;

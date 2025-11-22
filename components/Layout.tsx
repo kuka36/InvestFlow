@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, PieChart, Wallet, Settings, Menu, X, History } from 'lucide-react';
@@ -24,10 +23,13 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       {/* Sidebar Desktop */}
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-100 h-screen fixed left-0 top-0 z-20">
         <div className="p-6 flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             </div>
-            <span className="text-xl font-bold text-slate-800 tracking-tight">InvestFlow</span>
+            <div className="flex flex-col">
+                <span className="text-lg font-bold text-slate-800 tracking-tight leading-tight">PanassetLite</span>
+                <span className="text-[10px] text-slate-400 font-medium">盘资产·轻</span>
+            </div>
         </div>
         <nav className="flex-1 px-4 space-y-2 mt-4">
           <NavItem to="/" icon={<LayoutDashboard size={20}/>} label={t('dashboard')} />
@@ -47,9 +49,9 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       <div className="md:hidden fixed top-0 left-0 right-0 bg-white z-30 px-4 py-3 border-b border-slate-100 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold">IF</span>
+                <span className="text-white font-bold">PL</span>
             </div>
-            <span className="text-lg font-bold text-slate-800">InvestFlow</span>
+            <span className="text-lg font-bold text-slate-800">PanassetLite</span>
         </div>
         <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 

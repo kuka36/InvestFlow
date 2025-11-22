@@ -1,4 +1,3 @@
-
 import React, { useRef, useState } from 'react';
 import { usePortfolio } from '../context/PortfolioContext';
 import { Card } from './ui/Card';
@@ -33,7 +32,7 @@ export const Settings: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `investflow_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `panassetlite_backup_${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -263,7 +262,7 @@ export const Settings: React.FC = () => {
       </Card>
 
       <div className="text-center text-slate-400 text-sm pt-4">
-          InvestFlow v1.0.5 • Local Data Storage
+          PanassetLite (盘资产·轻) v1.0.5 • Local Data Storage
       </div>
     </div>
   );

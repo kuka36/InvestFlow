@@ -1,5 +1,5 @@
 {
-  "name": "investflow",
+  "name": "panassetlite",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -26,5 +26,5 @@
     "typescript": "^5.7.2",
     "vite": "^6.0.1"
   },
-  "homepage": "https://kuka36.github.io/InvestFlow"
+  "homepage": "https://kuka36.github.io/PanassetLite"
 }
