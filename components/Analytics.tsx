@@ -383,9 +383,14 @@ export const Analytics: React.FC = () => {
                                 </div>
                              </div>
                          ) : (
-                             <div className="text-center text-xs text-slate-400 italic p-4 bg-slate-50 rounded-xl border border-slate-100 border-dashed">
-                                {t('startRiskAnalysis')}...
-                             </div>
+                             <button 
+                                onClick={handleRefreshRisk} 
+                                disabled={loadingRisk}
+                                className="p-1.5 hover:bg-white hover:shadow-sm rounded-lg text-slate-400 hover:text-purple-600 transition-all"
+                                title={t('recalculate')}
+                            >
+                                <RefreshCw size={14} className={loadingRisk ? "animate-spin" : ""} />
+                            </button>
                          )}
                      </div>
                  </div>
