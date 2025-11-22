@@ -132,6 +132,7 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const deleteAsset = (id: string) => {
     setAssets(prev => prev.filter(asset => asset.id !== id));
+    setTransactions(prev => prev.filter(t => t.assetId !== id));
   };
 
   const addTransaction = (tx: Omit<Transaction, 'id'>) => {
