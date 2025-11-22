@@ -5,7 +5,7 @@ import { Card } from './ui/Card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { TrendingUp, TrendingDown, DollarSign, Activity, EyeOff, Wallet, CreditCard } from 'lucide-react';
 import { convertValue } from '../services/marketData';
-import { AssetType } from '../types';
+import { AssetType, Currency } from '../types';
 
 const COLORS = ['#0ea5e9', '#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#f97316'];
 
@@ -119,13 +119,14 @@ export const Dashboard: React.FC = () => {
       // Smooth landing to current value
       if (i === 0) balance = summary.totalNetWorth;
       
+      const locale = settings.language === 'zh' ? 'zh-CN' : 'en-US';
       data.push({
-        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        date: date.toLocaleDateString(locale, { month: 'short', day: 'numeric' }),
         value: balance
       });
     }
     return data;
-  }, [summary.totalNetWorth, summary.totalCost, assets.length, portfolioVolatility]);
+  }, [summary.totalNetWorth, summary.totalCost, assets.length, portfolioVolatility, settings.language]);
 
   const formatCurrency = (val: number) => {
       if (settings.isPrivacyMode) return '****';
@@ -136,6 +137,15 @@ export const Dashboard: React.FC = () => {
       if (settings.isPrivacyMode) return '**%';
       return `${val.toFixed(2)}%`;
   };
+
+  const getAxisCurrencySymbol = () => {
+    switch(settings.baseCurrency) {
+        case Currency.CNY: return '¥';
+        case Currency.HKD: return 'HK$';
+        default: return '$';
+    }
+  };
+  const axisSymbol = getAxisCurrencySymbol();
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -215,7 +225,10 @@ export const Dashboard: React.FC = () => {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                 <XAxis dataKey="date" tickLine={false} axisLine={false} tick={{fill: '#64748b', fontSize: 12}} />
-                <YAxis tickFormatter={(val) => `$${(val/1000).toFixed(0)}k`} tickLine={false} axisLine={false} tick={{fill: '#64748b', fontSize: 12}} width={40}/>
+                <YAxis 
+                  tickFormatter={(val) => `${axisSymbol}${(val/1000).toFixed(0)}k`} 
+                  tickLine={false} axisLine={false} tick={{fill: '#64748b', fontSize: 12}} width={45}
+                />
                 <Tooltip 
                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                     formatter={(value: number) => [formatCurrency(value), t('netWorth')]}

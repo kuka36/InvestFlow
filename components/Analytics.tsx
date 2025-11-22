@@ -386,7 +386,7 @@ export const Analytics: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
         {/* Cost vs Value */}
-        <Card title="Cost vs. Value">
+        <Card title={t('costVsValue')}>
            <div className="h-[250px] w-full">
             <ResponsiveContainer>
               <BarChart data={topAssets} layout="vertical" margin={{ left: 0, right: 10, top: 0, bottom: 0 }} barGap={2}>
@@ -405,15 +405,15 @@ export const Analytics: React.FC = () => {
                     formatter={(val: number) => formatCurrency(val)}
                 />
                 <Legend iconSize={8} wrapperStyle={{fontSize: '11px'}}/>
-                <Bar dataKey="cost" name="Cost" fill="#cbd5e1" radius={[0, 3, 3, 0]} barSize={8} />
-                <Bar dataKey="value" name="Value" fill="#3b82f6" radius={[0, 3, 3, 0]} barSize={8} />
+                <Bar dataKey="cost" name={t('label_cost')} fill="#cbd5e1" radius={[0, 3, 3, 0]} barSize={8} />
+                <Bar dataKey="value" name={t('label_value')} fill="#3b82f6" radius={[0, 3, 3, 0]} barSize={8} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </Card>
 
         {/* P&L Performance */}
-        <Card title="Top Movers">
+        <Card title={t('topMovers')}>
            <div className="h-[250px] w-full">
             <ResponsiveContainer>
               <BarChart data={pnlRanking} margin={{top: 20, bottom: 0}}>
@@ -425,7 +425,7 @@ export const Analytics: React.FC = () => {
                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                     formatter={(val: number) => formatCurrency(val)}
                 />
-                <Bar dataKey="pnl" name="Net P&L" radius={[4, 4, 0, 0]}>
+                <Bar dataKey="pnl" name={t('label_net_pnl')} radius={[4, 4, 0, 0]}>
                    {pnlRanking.map((entry, index) => (
                       <Cell key={`cell-pnl-${index}`} fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} />
                    ))}
@@ -446,7 +446,7 @@ export const Analytics: React.FC = () => {
 
         {/* Liability Breakdown (Conditional Row) */}
         {liabilityDistribution.length > 0 && (
-            <Card title="Liability Breakdown" className="md:col-span-2">
+            <Card title={t('liabilityBreakdown')} className="md:col-span-2">
                  <div className="h-[180px] w-full flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>

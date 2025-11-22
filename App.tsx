@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
-import { PortfolioProvider } from './context/PortfolioContext';
+import { PortfolioProvider, usePortfolio } from './context/PortfolioContext';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { AssetList } from './components/AssetList';
@@ -15,11 +15,12 @@ import { Plus } from 'lucide-react';
 import { Asset } from './types';
 
 const DashboardView: React.FC = () => {
+  const { t } = usePortfolio();
   return (
     <div className="space-y-8">
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Overview</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-800">{t('overview')}</h1>
         </div>
       </div>
 
@@ -30,6 +31,7 @@ const DashboardView: React.FC = () => {
 };
 
 const AssetsView: React.FC = () => {
+  const { t } = usePortfolio();
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
   const [isTxModalOpen, setIsTxModalOpen] = useState(false);
   
@@ -67,15 +69,15 @@ const AssetsView: React.FC = () => {
     <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-                <h1 className="text-2xl font-bold text-slate-800">Assets Management</h1>
-                <p className="text-slate-500">Manage holdings and record trades.</p>
+                <h1 className="text-2xl font-bold text-slate-800">{t('assetsManagement')}</h1>
+                <p className="text-slate-500">{t('assetsSubtitle')}</p>
             </div>
             <div>
                 <button 
                     onClick={handleOpenAddAsset}
                     className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl shadow-lg shadow-blue-200 transition-all flex items-center gap-2"
                 >
-                    <Plus size={20}/> Add New Asset
+                    <Plus size={20}/> {t('addNewAsset')}
                 </button>
             </div>
         </div>
