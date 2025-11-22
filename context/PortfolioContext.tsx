@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
-import { Asset, AssetType, Currency, Transaction, TransactionType, Language } from '../types';
+import { Asset, AssetType, Currency, Transaction, TransactionType, Language, AIProvider } from '../types';
 import { fetchExchangeRates, fetchCryptoPrices, fetchStockPrices, ExchangeRates } from '../services/marketData';
 import { translations } from '../utils/i18n';
 
@@ -8,6 +8,8 @@ interface AppSettings {
   baseCurrency: Currency;
   isPrivacyMode: boolean;
   geminiApiKey: string;
+  deepSeekApiKey: string;
+  aiProvider: AIProvider;
   alphaVantageApiKey: string;
   language: Language;
 }
@@ -51,6 +53,8 @@ const INITIAL_SETTINGS: AppSettings = {
   baseCurrency: Currency.USD,
   isPrivacyMode: false,
   geminiApiKey: '',
+  deepSeekApiKey: '',
+  aiProvider: 'gemini',
   alphaVantageApiKey: '',
   language: getBrowserLanguage(),
 };
@@ -75,6 +79,8 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
         ...parsed,
         // Ensure default values if missing in saved data
         geminiApiKey: parsed.geminiApiKey || '',
+        deepSeekApiKey: parsed.deepSeekApiKey || '',
+        aiProvider: parsed.aiProvider || 'gemini',
         alphaVantageApiKey: parsed.alphaVantageApiKey || '',
         language: parsed.language || INITIAL_SETTINGS.language
       };

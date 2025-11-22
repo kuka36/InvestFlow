@@ -38,7 +38,9 @@ export const Analytics: React.FC = () => {
   const handleRefreshRisk = async () => {
     if (assets.length === 0) return;
     
-    if (!settings.geminiApiKey) {
+    const apiKey = settings.aiProvider === 'deepseek' ? settings.deepSeekApiKey : settings.geminiApiKey;
+
+    if (!apiKey) {
         setRiskError(true);
         return;
     }
@@ -48,7 +50,7 @@ export const Analytics: React.FC = () => {
 
     try {
         // Force refresh or fetch
-        const data = await getRiskAssessment(assets, settings.geminiApiKey, settings.language, true);
+        const data = await getRiskAssessment(assets, apiKey, settings.aiProvider, settings.language, true);
         setRiskData(data);
     } catch (e) {
         console.error("Failed to refresh risk assessment", e);

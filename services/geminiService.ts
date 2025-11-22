@@ -1,5 +1,7 @@
-import { GoogleGenAI, Type } from "@google/genai";
-import { Asset, AssetType, Language } from "../types";
+
+import { Type } from "@google/genai";
+import { Asset, AssetType, Language, AIProvider } from "../types";
+import { AIEngineFactory } from "./aiEngine";
 
 export const RISK_CACHE_KEY = 'investflow_risk_cache';
 export const RISK_CACHE_TTL = 3600 * 1000; // 1 hour
@@ -14,8 +16,6 @@ let pendingAdvisorPromise: { hash: string, promise: Promise<string> } | null = n
 export const generatePortfolioHash = (assets: Asset[]) => {
   return assets
     .map(a => {
-      // For manual valuation assets, price changes are significant user inputs, so include in hash.
-      // For market assets (Stock/Crypto), we ignore price to prevent cache invalidation on every market tick.
       const isManualValuation = a.type === AssetType.REAL_ESTATE || a.type === AssetType.LIABILITY || a.type === AssetType.OTHER;
       const pricePart = isManualValuation ? `:${a.currentPrice}` : '';
       return `${a.symbol}:${a.quantity}:${a.type}${pricePart}`;
@@ -24,12 +24,11 @@ export const generatePortfolioHash = (assets: Asset[]) => {
     .join('|');
 };
 
-export const getPortfolioAnalysis = async (assets: Asset[], apiKey: string, language: Language = 'en', forceRefresh: boolean = false) => {
+export const getPortfolioAnalysis = async (assets: Asset[], apiKey: string, provider: AIProvider, language: Language = 'en', forceRefresh: boolean = false) => {
   if (!apiKey) throw new Error("API Key is missing");
   if (assets.length === 0) return "";
 
-  // Include language in hash to ensure we re-fetch if language changes
-  const currentHash = `${generatePortfolioHash(assets)}:${language}`;
+  const currentHash = `${generatePortfolioHash(assets)}:${language}:${provider}`;
   const now = Date.now();
 
   // 1. Check LocalStorage Cache
@@ -52,9 +51,6 @@ export const getPortfolioAnalysis = async (assets: Asset[], apiKey: string, lang
   }
 
   const apiCall = (async () => {
-    // Initialize AI with the provided key
-    const ai = new GoogleGenAI({ apiKey });
-
     const portfolioSummary = assets.map(a => ({
       symbol: a.symbol,
       type: a.type,
@@ -65,7 +61,7 @@ export const getPortfolioAnalysis = async (assets: Asset[], apiKey: string, lang
 
     const targetLanguage = language === 'zh' ? 'Chinese (Simplified)' : 'English';
 
-    // Optimized System Prompt for Comprehensive Wealth Management with Privacy Protection
+    // Optimized System Prompt
     const prompt = `
     You are the Chief Investment Officer (CIO) for 'PanassetLite' (盘资产·轻), a private wealth management platform.
 
@@ -103,24 +99,23 @@ export const getPortfolioAnalysis = async (assets: Asset[], apiKey: string, lang
     **Length:** Concise (~300 words).
     `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-    });
-    
-    const textResult = response.text || (language === 'zh' ? "暂时无法生成分析报告。" : "Unable to generate analysis report.");
+    // Strategy Pattern usage:
+    const engine = AIEngineFactory.create(provider, apiKey);
+    const textResult = await engine.generateText(prompt);
+
+    const finalResult = textResult || (language === 'zh' ? "暂时无法生成分析报告。" : "Unable to generate analysis report.");
 
     try {
       localStorage.setItem(ADVISOR_CACHE_KEY, JSON.stringify({
         hash: currentHash,
         timestamp: Date.now(),
-        data: textResult
+        data: finalResult
       }));
     } catch (e) {
       console.warn("PanassetLite: Failed to save advisor cache", e);
     }
 
-    return textResult;
+    return finalResult;
   })();
 
   pendingAdvisorPromise = { hash: currentHash, promise: apiCall };
@@ -132,11 +127,11 @@ export const getPortfolioAnalysis = async (assets: Asset[], apiKey: string, lang
   }
 };
 
-export const getRiskAssessment = async (assets: Asset[], apiKey: string, language: Language = 'en', forceRefresh: boolean = false) => {
+export const getRiskAssessment = async (assets: Asset[], apiKey: string, provider: AIProvider, language: Language = 'en', forceRefresh: boolean = false) => {
   if (!apiKey) throw new Error("API Key is missing");
   if (assets.length === 0) return null;
 
-  const currentHash = `${generatePortfolioHash(assets)}:${language}`;
+  const currentHash = `${generatePortfolioHash(assets)}:${language}:${provider}`;
   const now = Date.now();
 
   if (!forceRefresh) {
@@ -156,9 +151,6 @@ export const getRiskAssessment = async (assets: Asset[], apiKey: string, languag
   }
 
   const apiCall = (async () => {
-    // Initialize AI with the provided key
-    const ai = new GoogleGenAI({ apiKey });
-
     const portfolioSummary = assets.map(a => ({
       type: a.type,
       val: (a.quantity * a.currentPrice).toFixed(0),
@@ -178,26 +170,24 @@ export const getRiskAssessment = async (assets: Asset[], apiKey: string, languag
       - Liability: Debt (increases overall risk profile if high)
       
       Return JSON with a riskScore (1-10) and a brief analysis in ${targetLanguage}.
+      
+      The JSON keys must be: "riskScore", "riskLevel", "analysis".
     `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            riskScore: { type: Type.NUMBER, description: "1-10 Score (10 is Aggressive)" },
-            riskLevel: { type: Type.STRING, description: "Conservative, Balanced, Aggressive" },
-            analysis: { type: Type.STRING, description: `Max 60 words summary in ${targetLanguage}, no specific dollar/currency amounts.` }
-          },
-          required: ["riskScore", "riskLevel", "analysis"]
-        }
-      }
-    });
+    // Define Schema (Mainly for Gemini, but serves as documentation for DeepSeek too)
+    const schema = {
+      type: Type.OBJECT,
+      properties: {
+        riskScore: { type: Type.NUMBER, description: "1-10 Score (10 is Aggressive)" },
+        riskLevel: { type: Type.STRING, description: "Conservative, Balanced, Aggressive" },
+        analysis: { type: Type.STRING, description: `Max 60 words summary in ${targetLanguage}, no specific dollar/currency amounts.` }
+      },
+      required: ["riskScore", "riskLevel", "analysis"]
+    };
 
-    const data = JSON.parse(response.text as string);
+    // Strategy Pattern usage:
+    const engine = AIEngineFactory.create(provider, apiKey);
+    const data = await engine.generateJSON(prompt, schema);
 
     try {
       localStorage.setItem(RISK_CACHE_KEY, JSON.stringify({

@@ -16,6 +16,7 @@ export enum Currency {
 }
 
 export type Language = 'en' | 'zh';
+export type AIProvider = 'gemini' | 'deepseek';
 
 export enum EntryMode {
   SIMPLE = 'SIMPLE',

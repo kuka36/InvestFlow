@@ -2,9 +2,9 @@
 import React, { useRef, useState } from 'react';
 import { usePortfolio } from '../context/PortfolioContext';
 import { Card } from './ui/Card';
-import { Currency, Language } from '../types';
+import { Currency, Language, AIProvider } from '../types';
 import { 
-  Download, Upload, Trash2, Shield, Globe, AlertTriangle, CheckCircle, Key, Languages, Activity, Lock, Github, ExternalLink
+  Download, Upload, Trash2, Shield, Globe, AlertTriangle, CheckCircle, Key, Languages, Activity, Lock, Github, ExternalLink, Bot
 } from 'lucide-react';
 
 export const Settings: React.FC = () => {
@@ -87,26 +87,89 @@ export const Settings: React.FC = () => {
       {/* API Configuration */}
       <Card title={t('apiConfiguration')}>
         <div className="space-y-6">
-            {/* Gemini API Key */}
+            
+            {/* AI Provider Selection */}
+            <div className="flex items-start gap-3">
+                 <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg mt-1">
+                    <Bot size={20} />
+                </div>
+                <div className="flex-1">
+                     <div className="font-medium text-slate-800 mb-1">{t('aiProvider')}</div>
+                     <div className="text-sm text-slate-500 mb-3">{t('aiProviderDesc')}</div>
+                     
+                     <div className="grid grid-cols-2 gap-4 max-w-md">
+                        <label className={`border rounded-xl p-4 cursor-pointer transition-all ${settings.aiProvider === 'gemini' ? 'border-purple-500 bg-purple-50' : 'border-slate-200 hover:border-purple-200'}`}>
+                            <div className="flex items-center gap-3">
+                                <input 
+                                    type="radio" 
+                                    name="aiProvider"
+                                    checked={settings.aiProvider === 'gemini'}
+                                    onChange={() => updateSettings({ aiProvider: 'gemini' })}
+                                    className="w-4 h-4 text-purple-600 focus:ring-purple-500"
+                                />
+                                <span className="font-medium text-slate-800">Google Gemini</span>
+                            </div>
+                        </label>
+
+                        <label className={`border rounded-xl p-4 cursor-pointer transition-all ${settings.aiProvider === 'deepseek' ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-blue-200'}`}>
+                            <div className="flex items-center gap-3">
+                                <input 
+                                    type="radio" 
+                                    name="aiProvider"
+                                    checked={settings.aiProvider === 'deepseek'}
+                                    onChange={() => updateSettings({ aiProvider: 'deepseek' })}
+                                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span className="font-medium text-slate-800">DeepSeek</span>
+                            </div>
+                        </label>
+                     </div>
+                </div>
+            </div>
+
+            <div className="border-t border-slate-100 pt-4"></div>
+
+            {/* Dynamic AI Key Input */}
             <div className="flex items-start gap-3">
                  <div className="p-2 bg-purple-50 text-purple-600 rounded-lg mt-1">
                     <Key size={20} />
                 </div>
                 <div className="flex-1">
-                     <div className="font-medium text-slate-800 mb-1">{t('geminiKey')}</div>
-                     <div className="text-sm text-slate-500 mb-3 bg-blue-50 p-3 rounded-lg border border-blue-100">
-                        {t('geminiKeyDesc')}
-                        <div className="mt-1">
-                             <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-medium">{t('getKey')}</a>
-                        </div>
-                     </div>
-                     <input 
-                        type="password" 
-                        placeholder="Paste your Gemini API Key here..."
-                        value={settings.geminiApiKey}
-                        onChange={(e) => updateSettings({ geminiApiKey: e.target.value })}
-                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono"
-                     />
+                     {settings.aiProvider === 'gemini' ? (
+                        <>
+                            <div className="font-medium text-slate-800 mb-1">{t('geminiKey')}</div>
+                            <div className="text-sm text-slate-500 mb-3 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                {t('geminiKeyDesc')}
+                                <div className="mt-1">
+                                    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-medium">{t('getKey')}</a>
+                                </div>
+                            </div>
+                            <input 
+                                type="password" 
+                                placeholder="Paste your Gemini API Key here..."
+                                value={settings.geminiApiKey}
+                                onChange={(e) => updateSettings({ geminiApiKey: e.target.value })}
+                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono"
+                            />
+                        </>
+                     ) : (
+                        <>
+                            <div className="font-medium text-slate-800 mb-1">{t('deepSeekKey')}</div>
+                            <div className="text-sm text-slate-500 mb-3 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                {t('deepSeekKeyDesc')}
+                                <div className="mt-1">
+                                    <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-medium">{t('getKey')}</a>
+                                </div>
+                            </div>
+                            <input 
+                                type="password" 
+                                placeholder="Paste your DeepSeek API Key here..."
+                                value={settings.deepSeekApiKey}
+                                onChange={(e) => updateSettings({ deepSeekApiKey: e.target.value })}
+                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono"
+                            />
+                        </>
+                     )}
                 </div>
             </div>
 
@@ -293,7 +356,7 @@ export const Settings: React.FC = () => {
       </Card>
 
       <div className="text-center text-slate-400 text-sm pt-4">
-          PanassetLite (盘资产·轻) v1.0.5 • Local Data Storage
+          PanassetLite (盘资产·轻) v1.1.0 • Local Data Storage
       </div>
     </div>
   );

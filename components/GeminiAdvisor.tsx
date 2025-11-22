@@ -32,14 +32,14 @@ export const GeminiAdvisor: React.FC = () => {
                 const { hash, timestamp, data } = JSON.parse(cachedRaw);
                 const age = Date.now() - timestamp;
                 const isStale = age > ADVISOR_CACHE_TTL;
-                const hasChanged = hash !== currentHash;
+                const hasChanged = hash !== `${currentHash}:${settings.language}:${settings.aiProvider}`;
 
                 // Load cached data into view if available and we haven't generated new data yet
                 if (!analysis && data) {
                     setAnalysis(data);
                 }
 
-                // The button is enabled ONLY if the portfolio changed OR the data is > 24h old
+                // The button is enabled ONLY if the portfolio changed OR the data is > 24h old OR Settings Changed
                 setCanAnalyze(isStale || hasChanged);
 
             } catch (e) {
@@ -49,12 +49,14 @@ export const GeminiAdvisor: React.FC = () => {
     };
 
     checkCache();
-  }, [assets, analysis]);
+  }, [assets, analysis, settings.language, settings.aiProvider]);
 
   const handleAnalyze = async (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     
-    if (!settings.geminiApiKey) {
+    const apiKey = settings.aiProvider === 'deepseek' ? settings.deepSeekApiKey : settings.geminiApiKey;
+
+    if (!apiKey) {
       setError(t('apiKeyMissing'));
       setIsExpanded(true);
       return;
@@ -72,7 +74,7 @@ export const GeminiAdvisor: React.FC = () => {
       // The service handles the logic, but calling this will fetch fresh data 
       // if we are in a 'canAnalyze' state (hash diff or stale).
       // We also force localStorage update inside the service.
-      const result = await getPortfolioAnalysis(assets, settings.geminiApiKey, settings.language);
+      const result = await getPortfolioAnalysis(assets, apiKey, settings.aiProvider, settings.language);
       setAnalysis(result);
       setCanAnalyze(false); // Analysis is now fresh
     } catch (err: any) {
@@ -134,11 +136,9 @@ export const GeminiAdvisor: React.FC = () => {
             {error && (
                 <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex justify-between items-center">
                   <span>{error}</span>
-                  {!settings.geminiApiKey && (
-                    <Link to="/settings" className="flex items-center gap-1 text-blue-600 hover:underline font-medium">
+                  <Link to="/settings" className="flex items-center gap-1 text-blue-600 hover:underline font-medium">
                        <Key size={14}/> {t('setKey')}
-                    </Link>
-                  )}
+                  </Link>
                 </div>
             )}
 

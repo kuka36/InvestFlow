@@ -39,8 +39,8 @@
 - **🛡️ 隐私至上 (Local First)**  
   无需注册，数据完全加密存储在您的本地浏览器 (LocalStorage)，确保财务隐私绝对安全。
 
-- **🧠 AI 智能顾问 (Gemini Powered)**  
-  集成 Google Gemini AI，为您提供专业的投资组合风险评估、财富健康检查与优化建议。
+- **🧠 AI 智能顾问 (Dual Engine)**  
+  支持 **Google Gemini** 与 **DeepSeek** 双引擎，为您提供专业的投资组合风险评估、财富健康检查与优化建议。用户可任选其一进行配置。
 
 - **📈 实时行情**  
   自动对接 Alpha Vantage (股票) 和 CoinGecko (加密货币) API，实时更新资产现值。
@@ -58,7 +58,7 @@
 *   **Frontend**: React 19, TypeScript, Vite
 *   **Styling**: Tailwind CSS, Lucide Icons
 *   **Visualization**: Recharts
-*   **AI Integration**: Google Gemini API (`@google/genai`)
+*   **AI Integration**: Google Gemini API, DeepSeek API
 *   **Market Data**: Alpha Vantage API, CoinGecko API
 
 ---
@@ -95,7 +95,9 @@
 
 为了获得完整的 AI 分析与实时股价体验，建议在应用的 **设置 (Settings)** 页面配置以下 Key（均为免费申请）：
 
-1.  **Google Gemini API Key**: 用于 AI 风险分析。 ([申请链接](https://aistudio.google.com/app/apikey))
+1.  **AI 智能顾问 (任选其一)**:
+    *   **Google Gemini API Key**: ([申请链接](https://aistudio.google.com/app/apikey))
+    *   **DeepSeek API Key**: ([申请链接](https://platform.deepseek.com/api_keys))
 2.  **Alpha Vantage API Key**: 用于美股/港股实时价格。 ([申请链接](https://www.alphavantage.co/support/#api-key))
 
 *注：若不配置 API Key，应用仍可完美支持手动记账与资产统计功能。*
