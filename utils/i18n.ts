@@ -158,6 +158,13 @@ export const translations: Record<Language, Record<string, string>> = {
     setKey: "Set Key",
     unableToGenerate: "Unable to generate risk analysis.",
     aiUnavailable: "AI features unavailable. Please check your API Key.",
+
+    // Feedback
+    feedback: "Feedback",
+    haveFeedback: "Have feedback?",
+    reportBug: "Report a Bug / Suggestion",
+    githubLinkText: "Submit on GitHub",
+    githubDesc: "Help us improve PanassetLite by submitting issues or feature requests.",
   },
   zh: {
     dashboard: "仪表盘",
@@ -306,5 +313,11 @@ export const translations: Record<Language, Record<string, string>> = {
     setKey: "去设置",
     unableToGenerate: "无法生成风险分析。",
     aiUnavailable: "AI 功能不可用，请检查 API Key。",
+    
+    feedback: "反馈建议",
+    haveFeedback: "有反馈意见？",
+    reportBug: "提交 Bug 或功能建议",
+    githubLinkText: "前往 GitHub 提交",
+    githubDesc: "提交 Issue 或功能建议，帮助我们改进 PanassetLite。",
   }
 };

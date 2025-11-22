@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, PieChart, Wallet, Settings, Menu, X, History } from 'lucide-react';
+import { LayoutDashboard, PieChart, Wallet, Settings, Menu, X, History, MessageSquarePlus } from 'lucide-react';
 import { usePortfolio } from '../context/PortfolioContext';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -39,6 +40,15 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           <NavItem to="/settings" icon={<Settings size={20}/>} label={t('settings')} />
         </nav>
         <div className="p-6 border-t border-slate-100">
+            <a 
+                href="https://github.com/kuka36/PanassetLite/issues"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-3 text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors mb-4 group"
+            >
+                <MessageSquarePlus size={18} className="text-slate-400 group-hover:text-blue-500"/>
+                {t('haveFeedback')}
+            </a>
             <div className="text-xs text-slate-400">
                 {t('disclaimer')}
             </div>
@@ -71,6 +81,18 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                  <NavItem to="/history" icon={<History size={20}/>} label={t('history')} onClick={() => setIsMobileMenuOpen(false)} />
                  <NavItem to="/analytics" icon={<PieChart size={20}/>} label={t('analytics')} onClick={() => setIsMobileMenuOpen(false)} />
                  <NavItem to="/settings" icon={<Settings size={20}/>} label={t('settings')} onClick={() => setIsMobileMenuOpen(false)} />
+                 
+                 <div className="pt-4 mt-4 border-t border-slate-100">
+                    <a 
+                        href="https://github.com/kuka36/PanassetLite/issues"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 rounded-xl transition-colors"
+                    >
+                        <MessageSquarePlus size={20}/>
+                        <span className="font-medium">{t('haveFeedback')}</span>
+                    </a>
+                 </div>
               </nav>
            </div>
         </div>
