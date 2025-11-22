@@ -189,16 +189,6 @@ export const Analytics: React.FC = () => {
     </>
   );
 
-  const riskCardAction = (
-    <button 
-        onClick={handleRefreshRisk}
-        disabled={loadingRisk}
-        className="text-sm px-4 py-2 bg-white border border-slate-200 hover:border-purple-300 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-all flex items-center gap-2 shadow-sm font-medium"
-    >
-        {loadingRisk ? <RefreshCw className="animate-spin" size={16}/> : <><Sparkles size={16} /> {riskData ? t('recalculate') : t('startRiskAnalysis')}</>}
-    </button>
-  );
-
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-2 mb-2">
@@ -294,7 +284,7 @@ export const Analytics: React.FC = () => {
         </Card>
 
         {/* Risk Profile & AI Insight - UPDATED */}
-        <Card className="lg:col-span-2 min-w-0" title={riskCardTitle} action={riskCardAction}>
+        <Card className="lg:col-span-2 min-w-0" title={riskCardTitle}>
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
              <div className="h-[240px] min-w-0 flex flex-col justify-center">
                 <ResponsiveContainer width="100%" height="100%">
